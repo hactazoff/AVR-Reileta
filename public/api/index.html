@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-100" data-bs-theme-value="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-setinner="avr.get_info.title">AtelierVR</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js" type="module"></script>
+</head>
+
+<body class=" py-5 my-5">
+    <div class="container-sm py-5 my-5">
+        <h1>API</h1>
+        <nav>
+            <h2>Sommaire</h2>
+            <ul>
+                <li><a href="#avr_get_info">avr.getInfo</a></li>
+                <li><a href="#avr_get_me">avr.getMe</a></li>
+                <li><a href="#avr_update_me">avr.updateMe</a></li>
+
+                <li><a href="#avr_get_user">avr.getUser</a></li>
+
+                <li><a href="#avr_login">avr.loginAccount</a></li>
+                <li><a href="#avr_logout">avr.logoutAccount</a></li>
+                <li><a href="#avr_register">avr.registerAccount</a></li>
+                <li><a href="#avr_delete">avr.deleteAccount</a></li>
+
+                <li><a href="#avr_get_home">avr.getHome</a></li>
+                <li><a href="#avr_update_home">avr.updateHome</a></li>
+                <li><a href="#avr_delete_home">avr.deleteHome</a></li>
+
+                <li><a href="#avr_get_world">avr.getWorld</a></li>
+                <li><a href="#avr_create_world">avr.createWorld</a></li>
+                <li><a href="#avr_upload_world">avr.uploadWorld</a></li>
+                <li><a href="#avr_delete_world">avr.deleteWorld</a></li>
+
+                <li><a href="#avr_create_world_asset">avr.createWorldAsset</a></li>
+                <li><a href="#avr_update_world_asset">avr.updateWorldAsset</a></li>
+                <li><a href="#avr_delete_world_asset">avr.deleteWorldAsset</a></li>
+            </ul>
+        </nav>
+        <div id="avr_get_info">
+            <h2>Get Info</h2>
+            <form action="">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_get_me">
+            <h2>Get Me</h2>
+            <form action="">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_update_me">
+            <h2>Update Me</h2>
+            <form action="">
+                <input type="text" name="display" placeholder="[&lt;displayname&gt;]">
+                <input type="text" name="username" placeholder="[&lt;username&gt;]">
+                <input type="password" name="password" placeholder="[&lt;password&gt;]">
+                <input type="file" name="thumbnail" placeholder="[&lt;thumbnail&gt;]" accept=".png, .jpg, .webp">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_get_user">
+            <h2>Get User</h2>
+            <form action="">
+                <input type="text" name="user" placeholder="[&lt;id&gt;[@&lt;domain&gt;]]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_login">
+            <h2>Login</h2>
+            <form action="">
+                <input type="text" name="username" placeholder="&lt;id&gt;">
+                <input type="password" name="password" placeholder="&lt;password&gt;">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_logout">
+            <h2>Logout</h2>
+            <form action="">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_register">
+            <h2>Register</h2>
+            <form action="">
+                <input type="text" name="username" placeholder="&lt;username&gt;">
+                <input type="password" name="password" placeholder="&lt;password&gt;">
+                <input type="text" name="display" placeholder="[&lt;displayname&gt;]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_delete">
+            <h2>Delete</h2>
+            <form action="">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_get_home">
+            <h2>Get Home</h2>
+            <form action="">
+                <input type="text" name="version" placeholder="[&lt;version&gt;]">
+                <input type="text" name="platform" placeholder="[&lt;platform&gt;]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_delete_home">
+            <h2>Delete Home</h2>
+            <form action="">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_update_home">
+            <h2>Update Home</h2>
+            <form action="">
+                <input type="text" name="home" placeholder="&lt;id&gt;[:&lt;version&gt;][@&lt;domain&gt;]">
+                <input type="text" name="platform" placeholder="[&lt;platform&gt;]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_get_world">
+            <h2>Get World</h2>
+            <form action="">
+                <input type="text" name="world" placeholder="&lt;id&gt;[:&lt;version&gt;][@&lt;domain&gt;]">
+                <input type="checkbox" name="empty">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_create_world">
+            <h2>Create World</h2>
+            <form action="">
+                <input type="text" name="id" placeholder="&lt;id&gt;">
+                <input type="text" name="title" placeholder="[&lt;title&gt;]">
+                <input type="text" name="description" placeholder="[&lt;description&gt;]">
+                <input type="text" name="tags" placeholder="[&lt;tags&gt;] (arg1, arg2, ...)">
+                <input type="number" name="capacity" placeholder="[&lt;capacity&gt;] (1..)" min="-1" max="256" step="1">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_upload_world">
+            <h2>Update World</h2>
+            <form action="">
+                <input type="text" name="id" placeholder="&lt;id&gt;">
+                <input type="text" name="title" placeholder="[&lt;title&gt;]">
+                <input type="text" name="description" placeholder="[&lt;description&gt;]">
+                <input type="text" name="tags" placeholder="[&lt;tags&gt;] (arg1, arg2, ...)">
+                <input type="number" name="capacity" placeholder="[&lt;capacity&gt;] (1..)" min="-1" max="256" step="1">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_delete_world">
+            <h2>Delete World</h2>
+            <form action="">
+                <input type="text" name="world" placeholder="&lt;id&gt;">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_create_world_asset">
+            <h2>Create World Asset</h2>
+            <form action="">
+                <input type="text" name="world" placeholder="&lt;world_id&gt;">
+                <input type="text" name="id" placeholder="[&lt;asset_id&gt;]">
+                <input type="text" name="platform" placeholder="[&lt;platform&gt;]">
+                <input type="text" name="version" placeholder="&lt;version&gt;">
+                <input type="text" name="engine" placeholder="[&lt;engine&gt;]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+    </div>
+</body>
+
+
+</html>

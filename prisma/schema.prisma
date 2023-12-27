@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String     @id @unique @default(uuid())
+  name       String     @unique
+  display    String?
+  sessions   Session[]
+  password   String?
+  thumbnail  String?
+  banner     String?
+  tags       Tag[]
+  email      String?
+  home       String? // <id>@<address> (world)
+  avatar     String? // <id>@<address> (avatar)
+  follower   Follower[]
+  updated_at DateTime   @default(now())
+  created_at DateTime   @default(now())
+  worlds     World[]
+}
+
+model Session {
+  id         String   @id @unique @default(uuid())
+  token      String   @unique
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}
+
+model Integrity {
+  id         String   @id @unique @default(uuid())
+  token      String   @unique
+  user       String // <id>@<address> (user)
+  expire_at  DateTime
+  updated_at DateTime @default(now())
+  create_at  DateTime @default(now())
+}
+
+model Follower {
+  id         String   @id @unique @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  follower   String // <id>@<address> (user)
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}
+
+model World {
+  id          String       @id @unique @default(uuid())
+  title       String       @unique
+  description String?
+  thumbnail   String?
+  capacity    Int
+  tags        Tag[]
+  owner_id    String
+  owner       User         @relation(fields: [owner_id], references: [id])
+  updated_at  DateTime     @default(now())
+  created_at  DateTime     @default(now())
+  assets      WorldAsset[]
+}
+
+model WorldAsset {
+  id         String   @id @unique @default(uuid())
+  world_id   String
+  world      World    @relation(fields: [world_id], references: [id])
+  url        String?
+  engine     String?
+  platform   String?
+  version    String
+  hash       String?
+  size       Int?
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}
+
+model Tag {
+  id         String   @id @unique @default(uuid())
+  name       String   @unique
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+
+  world     World?  @relation(fields: [world_id], references: [id])
+  world_id  String?
+  user      User?   @relation(fields: [user_id], references: [id])
+  user_id   String?
+  server    Server? @relation(fields: [server_id], references: [id])
+  server_id String?
+}
+
+model Server {
+  id         String   @id @unique @default(uuid())
+  address    String   @unique
+  secure     Boolean
+  tags       Tag[]
+  challenge  String?
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}

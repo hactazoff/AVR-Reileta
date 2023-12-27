@@ -1,0 +1,33 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.avr, .avr * {
+    color: white;
+}
+
+.avr.background {
+    background-color: rgb(37, 37, 37);
+}
+
+.avr.background.light {
+    background-color: rgb(62, 62, 62);
+}
+.avr.rounded {
+    border-radius: 8px;
+}
+
+.avr.box {
+    padding: 16px;
+    margin: 8px;
+}
+
+.avr button {
+    border-radius: 4px;
+}
+
+.avr.box.inline {
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
