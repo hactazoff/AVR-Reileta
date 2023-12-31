@@ -1,9 +1,11 @@
 import { Reileta } from "../Reileta";
 import { WorldAPIWeb } from "./WorldAPIWeb";
 import { Tag, World, WorldAsset } from "@prisma/client";
-import { ErrorCodes, GenerateId, getCanEditWorld, getFallbackWorld, getMyAdress, getSoftHideWorlds } from "../utils/Constants";
-import { ErrorMessage, checkUserTags, checkWorldAssetInput, checkWorldInput, checkWorldResponse, checkWorldSearchInput } from "../utils/Security";
+import { ErrorCodes, GenerateId, getCanEditWorld, getFallbackWorld, getFilePath, getMyAdress, getSoftHideWorlds, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "../utils/Constants";
+import { ErrorMessage, checkUserTags, checkValidityWorldAsset, checkWorldAssetInput, checkWorldInput, checkWorldResponse, checkWorldSearchInput, hashFile, isURL } from "../utils/Security";
 import { UserInfo, WorldAssetInfos, WorldAssetInput, WorldInfos, WorldSearchInput } from "../utils/Interfaces";
+import path, { join } from "path";
+import { renameSync, rmSync, statSync } from "fs";
 
 
 export interface WorldInput {
@@ -52,6 +54,62 @@ export class WorldManager {
         }
     }
 
+    async getInternalWorldAssetFile(id?: string, asset?: string, user?: UserInfo): Promise<{ path: string, is_url: boolean } | ErrorMessage> {
+        try {
+            if (!checkWorldSearchInput({ id }))
+                return new ErrorMessage(ErrorCodes.WorldInvalidInput);
+            const asset_obj = await this.getInternalWorldAsset(id, asset, user);
+            if (asset_obj instanceof ErrorMessage) return asset_obj;
+            console.log(asset_obj);
+            if (asset_obj.is_external_url)
+                return {
+                    path: asset_obj.url?.href || "",
+                    is_url: true
+                };
+            return {
+                path: path.join(getFilePath(), asset_obj.hash || asset_obj.id || ""),
+                is_url: false
+            };
+        } catch (e) {
+            console.error(e);
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
+
+
+    async uploadInternalWorldAssetFile(id?: string, asset?: string, file?: Express.Multer.File, who?: UserInfo): Promise<ErrorMessage | WorldAssetInfos> {
+        try {
+            if (!who)
+                return new ErrorMessage(ErrorCodes.UserNotLogged);
+            if (!checkWorldSearchInput({ id }) || !id || !checkWorldAssetInput({ id: asset }, true) || !asset || !file)
+                return new ErrorMessage(ErrorCodes.WorldAssetInvalidInput);
+            const world = await this.getInternalWorld(id, who);
+            if (world instanceof ErrorMessage) return world;
+            const asset_obj = await this.getInternalWorldAsset(id, asset, who);
+            if (asset_obj instanceof ErrorMessage) return asset_obj;
+            if (!asset_obj.engine || !asset_obj.platform
+                || !getSupportedWorldAssetEngine().includes(asset_obj.engine)
+                || !getSupportedWorldAssetPlatforms().includes(asset_obj.platform)
+            ) return new ErrorMessage(ErrorCodes.WorldAssetPreventUploadError);
+            if (!checkUserTags(who, ['avr:admin']) && !getCanEditWorld() && who?.id !== world.owner_id)
+                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+            var out = await checkValidityWorldAsset(file, asset_obj.engine, asset_obj.platform);
+            if (!out || out.content_type !== "world" || out.platform !== asset_obj.platform || out.engine !== asset_obj.engine)
+                return new ErrorMessage(ErrorCodes.WorldAssetInvalidFile);
+            const hash = hashFile(file.path);
+            const size = statSync(file.path).size;
+            renameSync(file.path, join(getFilePath(), hash));
+            await this.app.prisma.worldAsset.update({
+                where: { id: asset },
+                data: { url: null, hash, size }
+            });
+            return await this.getInternalWorldAsset(id, asset, who);
+        } catch (e) {
+            console.error(e);
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
+
     async getInternalWorld(id?: string, who?: UserInfo): Promise<WorldInfos | ErrorMessage> {
         try {
             if (!checkWorldSearchInput({ id }))
@@ -61,8 +119,7 @@ export class WorldManager {
                 where: { id },
                 include: { tags: true, assets: true }
             });
-
-            if (!world || (getSoftHideWorlds() && !world.tags.some(t => t.name === "avr:public") && (!who || !checkUserTags(who, ["avr:admin"]) && who.id !== world.owner_id)))
+            if (!world)
                 return new ErrorMessage(ErrorCodes.WorldNotFound);
 
             return {
@@ -79,10 +136,14 @@ export class WorldManager {
                     id: a.id,
                     version: a.version,
                     platform: a.platform || "unknown",
-                    url: new URL(a.url || "unknown", this.app.server.getInfo.gateways.http),
+                    url: new URL(isURL(a.url || "")
+                        ? a.url || ""
+                        : `/api/worlds/${a.world_id}/assets/${a.id}/file`,
+                        this.app.server.getInfo.gateways.http),
+                    is_external_url: isURL(a.url || ""),
                     engine: a.engine || "unknown",
                     hash: a.hash || "unknown",
-                    empty: !a.platform || !a.engine || !a.url || !a.hash || !a.size || undefined,
+                    empty: !a.platform || !a.engine || !a.hash || !a.size || undefined,
                     size: a.size || 0,
                     created_at: a.created_at,
                     updated_at: a.updated_at
@@ -162,6 +223,7 @@ export class WorldManager {
                 return new ErrorMessage(ErrorCodes.UserDontHavePermission);
             let asset = await this.app.prisma.worldAsset.create({
                 data: {
+                    id: input.id || GenerateId.File(),
                     world_id: id,
                     version: input.version,
                     engine: input.engine,
@@ -190,7 +252,13 @@ export class WorldManager {
                 id: asset.id,
                 version: asset.version,
                 platform: asset.platform || "unknown",
-                url: new URL(asset.url || "unknown", this.app.server.getInfo.gateways.http),
+                url: new URL(
+                    isURL(asset.url || "")
+                        ? asset.url || ""
+                        : `/api/worlds/${asset.world_id}/assets/${asset.id}/file`,
+                    this.app.server.getInfo.gateways.http
+                ),
+                is_external_url: isURL(asset.url || ""),
                 engine: asset.engine || "unknown",
                 hash: asset.hash || "unknown",
                 empty: !asset.platform || !asset.engine || !asset.url || !asset.hash || !asset.size || undefined,

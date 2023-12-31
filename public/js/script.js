@@ -6,7 +6,8 @@ import {
     loginAccount, logoutAccount, deleteAccount, registerAccount,
     getHome, deleteHome, updateHome,
     getWorld, uploadWorld, deleteWorld, createWorld,
-    createWorldAsset
+    createWorldAsset,
+    uploadWorldAssetFile
 } from "./api.js";
 
 events.on('avr:*', (ev) => {
@@ -160,5 +161,12 @@ window.addEventListener('load', async function () {
             version: e.target.version.value || undefined,
             engine: e.target.engine.value || undefined,
         });
+    });
+
+    const node_upload_world_asset_file = document.getElementById("avr_upload_world_asset_file");
+    node_upload_world_asset_file.querySelector("form").addEventListener('submit', function (e) {
+        e.preventDefault();
+        node_upload_world_asset_file.querySelector(".source").innerHTML = "Loading...";
+        uploadWorldAssetFile(e.target.world.value, e.target.id.value, e.target.file.files[0]);
     });
 });

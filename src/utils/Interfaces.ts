@@ -150,6 +150,7 @@ export interface WorldAssetInfos {
     engine?: string;
     platform?: string;
     empty?: boolean;
+    is_external_url: boolean
     url?: URL;
     created_at: Date;
     updated_at: Date;
@@ -222,4 +223,14 @@ export interface ResponseWorldAssetInfo {
     empty?: boolean;
     hash?: string;
     size?: number;
+}
+
+export interface ContentFileVerification {
+    content_type: 'world' | 'avatar';
+    platform: string,
+    engine: string,
+    engine_version: string,
+    stats: {
+        [key: string]: number
+    }
 }

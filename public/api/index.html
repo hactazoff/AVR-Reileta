@@ -40,6 +40,8 @@
                 <li><a href="#avr_create_world_asset">avr.createWorldAsset</a></li>
                 <li><a href="#avr_update_world_asset">avr.updateWorldAsset</a></li>
                 <li><a href="#avr_delete_world_asset">avr.deleteWorldAsset</a></li>
+
+                <li><a href="#avr_upload_world_asset_file">avr.uploadWorldAssetFile</a></li>
             </ul>
         </nav>
         <div id="avr_get_info">
@@ -197,6 +199,17 @@
                 <input type="text" name="platform" placeholder="[&lt;platform&gt;]">
                 <input type="text" name="version" placeholder="&lt;version&gt;">
                 <input type="text" name="engine" placeholder="[&lt;engine&gt;]">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_upload_world_asset_file">
+            <h2>Upload World Asset File</h2>
+            <form action="">
+                <input type="text" name="world" placeholder="&lt;world_id&gt;">
+                <input type="text" name="id" placeholder="&lt;asset_id&gt;">
+                <input type="file" name="file" placeholder="&lt;file&gt;" accept=".zip, .avrw">
                 <input type="submit">
             </form>
             <code class="source w-100"></code>

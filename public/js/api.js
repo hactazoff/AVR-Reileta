@@ -434,3 +434,26 @@ export async function createWorldAsset(id, obj) {
         return new Error(err.message);
     }
 }
+
+export async function uploadWorldAssetFile(id, asset_id, file) {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/worlds/' + id + '/assets/' + asset_id + '/file', {
+            method: 'POST',
+            headers: {
+                ...(token ? { Authorization: token } : {})
+            },
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:upload_world_asset_file', data.data);
+        events.emit('avr:*', { event: 'upload_world_asset_file', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:upload_world_asset_file', err);
+        events.emit('avr:*', { event: 'upload_world_asset_file', data: err });
+        return new Error(err.message);
+    }
+}

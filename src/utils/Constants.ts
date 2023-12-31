@@ -1,5 +1,7 @@
 import { randomBytes } from "crypto";
 import { ErrorCode } from "./Interfaces";
+import path from "path";
+import { cwd } from "process";
 
 const { randomUUID } = require("crypto");
 
@@ -105,6 +107,13 @@ export function getSupportedWorldAssetPlatforms() {
 
 export function getSupportedWorldAssetEngine() {
     return process.env.REILETA_SUPPORTED_WORLD_ASSET_ENGINE?.split(',').map(e=>e.trim()) || [];
+}
+
+export function getFilePath() {
+    var p = process.env.REILETA_FILE_PATH || "files";
+    if (path.isAbsolute(p))
+        return p;
+    return path.join(cwd(), p);
 }
 
 export const ErrorCodes = {
@@ -258,4 +267,14 @@ export const ErrorCodes = {
         code: 30,
         status: 409
     },
+    WorldAssetPreventUploadError: {
+        message: "World asset prevent upload error",
+        code: 31,
+        status: 409
+    },
+    WorldAssetInvalidFile: {
+        message: "World asset invalid file",
+        code: 32,
+        status: 400
+    }
 };

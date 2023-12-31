@@ -2,10 +2,9 @@ import { randomBytes, scryptSync } from "crypto";
 import { readFileSync } from "fs";
 import { spawn } from "node:child_process";
 import { join } from "path";
-import Undici, { Dispatcher } from "undici";
 import crypto from "crypto";
-import { Tag, User, World } from "@prisma/client";
-import { ErrorCode, LoginInput, ResponseBase, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
+import fs from "fs";
+import { ContentFileVerification, ErrorCode, LoginInput, ResponseBase, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
 import { MatchDisplay, MatchID, MatchName, MatchPassword, getDefaultUserTags, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "./Constants";
 import e from "express";
 
@@ -44,11 +43,62 @@ export function getPrivateKey() {
     else return source;
 }
 
+export function isURL(url: string) {
+    try {
+        new URL(url);
+        return true;
+    } catch { return false }
+
+}
+
 export function trustedURL(url: string) {
     try {
         const parsed = new URL(url);
         return parsed.protocol === "https:" || parsed.protocol === "http:";
     } catch { return false }
+}
+
+const verifpy: {
+    [key: string]: string[]
+} = {
+    "worlds:unity:windows": [join(__dirname, 'check_world_unity_windows.py'), join(__dirname, 'check_world_unity.py')],
+    "worlds:unity:linux": [join(__dirname, 'check_world_unity_linux.py'), join(__dirname, 'check_world_unity.py')],
+
+    "worlds:unreal:windows": [join(__dirname, 'check_world_unreal_windows.py'), join(__dirname, 'check_world_unreal.py')],
+    "worlds:unreal:linux": [join(__dirname, 'check_world_unreal_linux.py'), join(__dirname, 'check_world_unreal.py')],
+
+    "avatars:unity:windows": [join(__dirname, 'check_world_unity_windows.py'), join(__dirname, 'check_avatar_unity.py')],
+    "avatars:unity:linux": [join(__dirname, 'check_world_unity_linux.py'), join(__dirname, 'check_avatar_unity.py')],
+
+    "avatars:unreal:windows": [join(__dirname, 'check_world_unreal_windows.py'), join(__dirname, 'check_avatar_unreal.py')],
+    "avatars:unreal:linux": [join(__dirname, 'check_world_unreal_linux.py'), join(__dirname, 'check_avatar_unreal.py')],
+
+}
+
+export function checkValidityWorldAsset(file: Express.Multer.File, engine: string, platform: string): Promise<ContentFileVerification | null> {
+    // run "python3 ./check_<engine>_<platform>.py <path>"
+    // and return the output
+    return new Promise(resolve => {
+        try {
+            var verif = verifpy[`worlds:${engine}:${platform}`]?.filter((p: string) => fs.existsSync(p))[0];
+            if (!verif) return null;
+            const py = spawn('python3.11', [verif, file.path, 'worlds', engine, platform]);
+            var data = "";
+            py.stdout.on('data', (d: string) => data += d);
+            py.stderr.on('data', (d: string) => data += d);
+            py.on('close', () => {
+                try {
+                    resolve(JSON.parse(data.trim()))
+                } catch (e) {
+                    console.error(e, data);
+                    resolve(null);
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            resolve(null);
+        }
+    });
 }
 
 export async function getContentType(path: string) {

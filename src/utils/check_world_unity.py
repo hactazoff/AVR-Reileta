@@ -2,6 +2,15 @@ import UnityPy
 import os
 import sys
 
+platforms = {
+    "StandaloneWindows": "windows",
+    "StandaloneWindows64": "windows",
+    "StandaloneLinux64": "linux",
+    "StandaloneLinuxUniversal": "linux",
+    "StandaloneLinux": "linux",
+    "NoTarget": "unknown",
+}
+
 
 def main():
     if len(sys.argv) < 2:
@@ -18,7 +27,10 @@ def main():
 
     content_type = None
     counter = {}
+    pl = None
     for obj in env.objects:
+        if hasattr(obj, "platform") and hasattr(obj.platform, "name"):
+            pl = obj.platform.name
         if obj.type.name not in counter:
             counter[obj.type.name] = 0
         counter[obj.type.name] += 1
@@ -34,6 +46,10 @@ def main():
     import json
     print(json.dumps({
         "content_type": content_type,
+        "platform": platforms[pl],
+        "name": env.file.name,
+        "engine": "unity",
+        "engine_version": env.file.version_engine,
         "stats": counter
     }, indent=4))
 

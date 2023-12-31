@@ -14,7 +14,7 @@ import { join } from "path";
 import { WorldManager } from "./worlds/WorldManager";
 import mutler from "multer";
 import { readdirSync, statSync, unlinkSync } from "node:fs";
-import { getMyAdress, getName, getPort, getTmpFileExpiration } from "./utils/Constants";
+import { getMyAdress, getName, getPort, getTmpFileExpiration, isSecure } from "./utils/Constants";
 import { HomeManager } from "./home/HomeManager";
 
 export class Reileta extends EventEmitter {
@@ -50,7 +50,14 @@ export class Reileta extends EventEmitter {
         this.express = Express();
         this.express.use((q, s: any, n) => this.server.api_web.useBefore(q, s, n));
         this.http = HTTP.createServer(this.express);
-        this.io = new SocketIO.Server(this.http);
+        this.io = new SocketIO.Server(this.http, {
+            transports: ['websocket'],
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"],
+                credentials: isSecure(),
+            }
+        });
         // Ajoute les middleware
         console.debug("Ajout des middleware");
         this.server = new ServerManager(this);

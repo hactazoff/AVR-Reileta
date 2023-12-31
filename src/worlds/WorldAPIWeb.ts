@@ -12,18 +12,20 @@ export class WorldAPIWeb {
         this.app.express.put('/api/worlds', Express.json(), (q, s: any) => this.makeWorld(q, s));
 
         // TODO: External World Assets API
-        this.app.express.get('/api/worlds/:id@:server/assets', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
-        this.app.express.post('/api/worlds/:id@:server/assets', Express.json(), (q, s: any) => this.app.server.api_web.notImplemented(q, s));
         this.app.express.get('/api/worlds/:id@:server/assets/:asset', (q, s: any) => this.getExternalWorldAsset(q, s));
         this.app.express.post('/api/worlds/:id@:server/assets/:asset', Express.json(), (q, s: any) => this.app.server.api_web.notImplemented(q, s));
         this.app.express.delete('/api/worlds/:id@:server/assets/:asset', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
+        this.app.express.get('/api/worlds/:id@:server/assets', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
+        this.app.express.post('/api/worlds/:id@:server/assets', Express.json(), (q, s: any) => this.app.server.api_web.notImplemented(q, s));
 
         // TODO: World Assets API
-        this.app.express.get('/api/worlds/:id/assets', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
-        this.app.express.put('/api/worlds/:id/assets', Express.json(), (q, s: any) => this.makeWorldAsset(q, s));
-        this.app.express.get('/api/worlds/:id/assets/:asset', (q, s: any) => this.getWorldAsset(q, s));
+        this.app.express.get('/api/worlds/:id/assets/:asset/file', (q, s: any) => this.getWorldAssetFile(q, s));
+        this.app.express.post('/api/worlds/:id/assets/:asset/file', this.app.upload.single('file'), (q, s: any) => this.uploadWorldAssetFile(q, s));
+        this.app.express.get('/api/worlds/:id/assets/:asset', (q, s: any) => this.getInternalWorldAsset(q, s));
         this.app.express.post('/api/worlds/:id/assets/:asset', Express.json(), (q, s: any) => this.uploadWorldAsset(q, s));
         this.app.express.delete('/api/worlds/:id/assets/:asset', (q, s: any) => this.deleteWorldAsset(q, s));
+        this.app.express.get('/api/worlds/:id/assets', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
+        this.app.express.put('/api/worlds/:id/assets', Express.json(), (q, s: any) => this.makeWorldAsset(q, s));
 
         // TODO: External World API
         this.app.express.get('/api/worlds/:id@:server', (q, s: any) => this.getExternalWorld(q, s));
@@ -34,6 +36,22 @@ export class WorldAPIWeb {
         this.app.express.get('/api/worlds/:id', (q, s: any) => this.getWorld(q, s));
         this.app.express.post('/api/worlds/:id', Express.json(), (q, s: any) => this.uploadWorld(q, s));
         this.app.express.delete('/api/worlds/:id', (q, s: any) => this.deleteWorld(q, s));
+    }
+
+    async getWorldAssetFile(request: ARequest, response: AResponse) {
+        const world = await this.manager.getInternalWorldAssetFile(request.params.id, request.params.asset, request.data?.user);
+        if (world instanceof ErrorMessage)
+            return response.send(world);
+        if(world.is_url)
+            return response.redirect(world.path);
+        response.sendFile(world.path);
+    }
+
+    async uploadWorldAssetFile(request: ARequest, response: AResponse) {
+        const world = await this.manager.uploadInternalWorldAssetFile(request.params.id, request.params.asset, request.file, request.data?.user);
+        if(world instanceof ErrorMessage)
+            return response.send(world);
+        response.send({ data: "UPLOADED" });
     }
 
     async makeWorld(request: ARequest, response: AResponse) {
@@ -145,9 +163,21 @@ export class WorldAPIWeb {
         response.send({ data: res });
     }
 
-    async getWorldAsset(request: ARequest, response: AResponse) {
+    async getInternalWorldAsset(request: ARequest, response: AResponse) {
         const world = await this.manager.getInternalWorldAsset(request.params.id, request.params.asset, request.data?.user);
-        response.send(world instanceof ErrorMessage ? world : { data: world });
+        if (world instanceof ErrorMessage)
+            return response.send(world);
+        const res: ResponseWorldAssetInfo = {
+            id: world.id,
+            version: world.version,
+            empty: typeof request.query.empty !== 'undefined' ? true : world.empty,
+            url: typeof request.query.empty !== 'undefined' ? "unknown" : (world.url?.href || "unknown"),
+            hash: typeof request.query.empty !== 'undefined' ? "unknown" : world.hash,
+            engine: typeof request.query.empty !== 'undefined' ? "unknown" : world.engine,
+            size: typeof request.query.empty !== 'undefined' ? 0 : world.size,
+            platform: typeof request.query.empty !== 'undefined' ? "unknown" : world.platform,
+        }
+        response.send({ data: res });
     }
 
     async uploadWorldAsset(request: ARequest, response: AResponse) {
