@@ -50,6 +50,9 @@ export class ServerAPIWeb {
         response.send = (obj: any) => this.responseSender(request, response, next, obj);
         if (!this.app.serviceEnabled())
             return response.send({ error: ErrorCodes.ServiceDisabled });
+        response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Expires', '0');
         next();
     }
 
