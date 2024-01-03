@@ -171,6 +171,10 @@ export function getFilePath() {
     return path.join(cwd(), p);
 }
 
+export function getIntegrityExpiration() {
+    return parseInt(process.env.REILETA_INTEGRITY_EXPIRATION || "") || 3e5;
+}
+
 export const ErrorCodes = {
     ServiceDisabled: {
         message: "Service disabled",
@@ -337,4 +341,9 @@ export const ErrorCodes = {
         code: 33,
         status: 400
     },
+    IntegrityInvalidInput: {
+        message: "Integrity invalid input",
+        code: 34,
+        status: 400
+    }
 };

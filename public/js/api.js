@@ -479,3 +479,25 @@ export async function createInstance(obj) {
         return new Error(err.message);
     }
 }
+
+export async function createIntegrity(server) {
+    try {
+        const res = await fetch('/api/integrity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: token } : {})
+            },
+            body: JSON.stringify({ server: server })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:create_integrity', data.data);
+        events.emit('avr:*', { event: 'create_integrity', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:create_integrity', err);
+        events.emit('avr:*', { event: 'create_integrity', data: err });
+        return new Error(err.message);
+    }
+}

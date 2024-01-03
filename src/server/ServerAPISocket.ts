@@ -13,6 +13,11 @@ export class ServerAPISocket {
      */
     onConnection(socket: SocketType) {
         console.log(`Socket ${socket.id} connected.`);
+        // on any event
+        socket.onAny((event, ...args) => {
+            if (event !== 'ping')
+                console.log(`Socket ${socket.id} emitted event ${event}.`);
+        });
         socket.on('ping', (obj, callback) => this.onPing(socket, obj, callback));
     }
 

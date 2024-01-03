@@ -91,7 +91,6 @@ export class ServerManager {
         var service_enabled = data.service_enabled === true;
 
         // here to update 
-
     }
 
     /**
@@ -304,5 +303,9 @@ export class ServerManager {
                 data: undefined
             }
         }
+    }
+
+    async fetchChallenge(address: string): Promise<ErrorMessage | null> {
+        return null;
     }
 }

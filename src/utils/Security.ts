@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import crypto from "crypto";
 import fs from "fs";
-import { ContentFileVerification, ErrorCode, InstanceInput, LoginInput, ResponseBase, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
+import { ContentFileVerification, ErrorCode, InstanceInput, IntegrityInput, IntegrityServerInput, LoginInput, ResponseBase, ResponseIntegrityInfo, ResponseIntegrityServer, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
 import { MatchDisplay, MatchID, MatchInstanceName, MatchName, MatchPassword, MatchTags, getDefaultUserTags, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "./Constants";
 import e from "express";
 
@@ -173,6 +173,10 @@ export function generateSessionToken() {
     return randomBytes(1 << 6).toString('base64');
 }
 
+export function generateIntegrityToken() {
+    return randomBytes(1 << 6).toString('base64');
+}
+
 export function checkBaseResponse<T>(data: any): data is ResponseBase<T> {
     return typeof data === "object"
         && typeof data.request === "string"
@@ -308,5 +312,33 @@ export function checkInstanceInput(input: any, who?: UserInfo): input is Instanc
                 if (input.tags.includes(overhide))
                     return false;
         }
+    return true;
+}
+
+export function checkIntegrityInput(input: any): input is IntegrityInput {
+    return typeof input === "object"
+        && typeof input.server === "string";
+}
+
+export function checkIntegrityInforResponse(res: any): res is ResponseIntegrityInfo {
+    return typeof res === "object"
+        && typeof res.server === "string"
+        && typeof res.user === "string"
+        && typeof res.token === "string"
+        && typeof res.expires_at === "number";
+}
+
+export function checkIntegrityServerResponse(res: any): res is ResponseIntegrityServer {
+    return typeof res === "object"
+        && typeof res.id === "string"
+        && typeof res.user === "string"
+        && typeof res.token === "string"
+        && typeof res.expires_at === "number"
+}
+
+export function checkIntegrityServerInput(input: any): input is IntegrityServerInput {
+    var i = typeof input === "object"
+        && typeof input.user === "string";
+    if (!i) return false;
     return true;
 }

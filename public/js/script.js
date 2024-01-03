@@ -9,6 +9,7 @@ import {
     createWorldAsset,
     uploadWorldAssetFile,
     createInstance,
+    createIntegrity
 } from "./api.js";
 
 events.on('avr:*', (ev) => {
@@ -184,4 +185,10 @@ window.addEventListener('load', async function () {
         });
     });
 
+    const node_create_integrity = document.getElementById("avr_create_integrity");
+    node_create_integrity.querySelector("form").addEventListener('submit', function (e) {
+        e.preventDefault();
+        node_create_integrity.querySelector(".source").innerHTML = "Loading...";
+        createIntegrity(e.target.server.value);
+    });
 });

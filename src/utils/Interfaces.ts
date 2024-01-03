@@ -282,3 +282,41 @@ export interface ContentFileVerification {
         [key: string]: number
     }
 }
+
+export interface IntegrityInput {
+    server?: string;
+}
+
+export interface IntegrityInfo {
+    id: string;
+    user: UserInfo;
+    server: ServerInfo;
+    expires_at: Date;
+    token: string;
+}
+
+export interface ResponseIntegrityServer {
+    id: string;
+    user: string;
+    token: string;
+    expires_at: number;
+}
+
+export interface IntegrityServer {
+    id: string;
+    user: UserInfo;
+    server: ServerInfo;
+    token: string;
+    expires_at: Date;
+}
+
+export interface IntegrityServerInput {
+    user?: string;
+}
+
+export interface ResponseIntegrityInfo {
+    server: string;
+    user: string;
+    token: string;
+    expires_at: number;
+}

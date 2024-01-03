@@ -18,6 +18,7 @@ import { getMyAdress, getName, getPort, getTmpFileExpiration, isSecure } from ".
 import { HomeManager } from "./home/HomeManager";
 import { stream } from "undici";
 import { InstanceManager } from "./instance/InstanceManager";
+import { IntegrityManager } from "./integrity/IntegrityManager";
 
 export class Reileta extends EventEmitter {
 
@@ -40,6 +41,7 @@ export class Reileta extends EventEmitter {
     ready_at: Date = new Date(0);
     home: HomeManager;
     instances: InstanceManager;
+    integrity: IntegrityManager;
 
     constructor() {
         super();
@@ -92,6 +94,7 @@ export class Reileta extends EventEmitter {
         this.worlds = new WorldManager(this);
         this.home = new HomeManager(this);
         this.instances = new InstanceManager(this);
+        this.integrity = new IntegrityManager(this);
 
 
         // Reférence le gestionnaire de plugins

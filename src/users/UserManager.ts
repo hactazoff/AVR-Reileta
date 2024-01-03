@@ -19,6 +19,12 @@ export class UserManager {
         return `${obj.id}${obj.server ? "@" + obj.server : ""}`;
     }
 
+    strToObject(str?: string): { id: string, server?: string } | null {
+        if (!str) return null;
+        const spl = str.split("@");
+        return { id: spl[0], server: spl[1] };
+    }
+
     async checkCreateRootUser() {
         try {
             const root = await this.app.prisma.user.findUnique({ where: { name: "root" } });
