@@ -159,6 +159,15 @@ It can Authenticate itself with the following requests with the `Authorization` 
 - [GET /api/chalnges/:id](#get-apiserver-challengesid) - Get a server challenge information
 - [DELETE /api/challenges/:id](#delete-apiserver-challengesid) - Delete a server challenge
 
+### Integrity
+
+> The integrity is a way to check the identity of a user on a other server, to access private data or access to a instance.
+It can Authenticate itself with the following requests with the `Authorization` and `User-Agent: AVR(User)` headers, or with the `?integrityuser` query parameter.
+
+- [GET /api/integrity](#get-apiintegrity) - Get all integrity
+- [PUT /api/integrity](#put-apiintegrity) - Fetch a new integrity token by a sever for a own user (server only)
+- [POST /api/integrity](#post-apiintegrity) - Fetch a create integrity token by a user for a server (user only, on host server)
+
 ### Instances
 
 > The instances are the servers of the system.
