@@ -17,7 +17,6 @@ export class AuthManager {
         try {
             if (getCanLogin())
                 return new ErrorMessage(ErrorCodes.ServiceDisabled);
-            console.log(input, who);
             if (who)
                 return new ErrorMessage(ErrorCodes.UserAlreadyConnected);
             if (!checkLoginInput(input))
@@ -76,7 +75,6 @@ export class AuthManager {
         try {
             if (getCanEditUser())
                 return new ErrorMessage(ErrorCodes.ServiceDisabled);
-            console.log(session, who);
             if (!who)
                 return new ErrorMessage(ErrorCodes.UserNotLogged);
             return await this.app.sessions.deleteSession(session?.id, who);

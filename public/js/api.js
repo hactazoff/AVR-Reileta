@@ -457,3 +457,25 @@ export async function uploadWorldAssetFile(id, asset_id, file) {
         return new Error(err.message);
     }
 }
+
+export async function createInstance(obj) {
+    try {
+        const res = await fetch('/api/instances', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: token } : {})
+            },
+            body: JSON.stringify(obj)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:create_instance', data.data);
+        events.emit('avr:*', { event: 'create_instance', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:create_instance', err);
+        events.emit('avr:*', { event: 'create_instance', data: err });
+        return new Error(err.message);
+    }
+}

@@ -16,6 +16,8 @@ import mutler from "multer";
 import { readdirSync, statSync, unlinkSync } from "node:fs";
 import { getMyAdress, getName, getPort, getTmpFileExpiration, isSecure } from "./utils/Constants";
 import { HomeManager } from "./home/HomeManager";
+import { stream } from "undici";
+import { InstanceManager } from "./instance/InstanceManager";
 
 export class Reileta extends EventEmitter {
 
@@ -37,6 +39,7 @@ export class Reileta extends EventEmitter {
     upload: mutler.Multer;
     ready_at: Date = new Date(0);
     home: HomeManager;
+    instances: InstanceManager;
 
     constructor() {
         super();
@@ -88,6 +91,7 @@ export class Reileta extends EventEmitter {
         this.plugins = new PluginManager(this);
         this.worlds = new WorldManager(this);
         this.home = new HomeManager(this);
+        this.instances = new InstanceManager(this);
 
 
         // Reférence le gestionnaire de plugins

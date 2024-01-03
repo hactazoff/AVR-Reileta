@@ -7,7 +7,8 @@ import {
     getHome, deleteHome, updateHome,
     getWorld, uploadWorld, deleteWorld, createWorld,
     createWorldAsset,
-    uploadWorldAssetFile
+    uploadWorldAssetFile,
+    createInstance,
 } from "./api.js";
 
 events.on('avr:*', (ev) => {
@@ -169,4 +170,18 @@ window.addEventListener('load', async function () {
         node_upload_world_asset_file.querySelector(".source").innerHTML = "Loading...";
         uploadWorldAssetFile(e.target.world.value, e.target.id.value, e.target.file.files[0]);
     });
+
+    const node_create_instance = document.getElementById("avr_create_instance");
+    node_create_instance.querySelector("form").addEventListener('submit', function (e) {
+        e.preventDefault();
+        node_create_instance.querySelector(".source").innerHTML = "Loading...";
+        createInstance({
+            id: e.target.id.value || undefined,
+            name: e.target.name.value || undefined,
+            capacity: parseInt(e.target.capacity.value) || undefined,
+            world: e.target.world.value || undefined,
+            tags: e.target.tags.value.split(',').map((s) => s.trim()).filter((s) => s.length > 0),
+        });
+    });
+
 });

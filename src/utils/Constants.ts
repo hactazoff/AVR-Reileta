@@ -10,11 +10,65 @@ export const CookieValue = "_suid";
 export const MatchPassword = /^.{8,}$/;
 export const MatchDisplay = /^.{3,16}$/;
 export const MatchName = /^[A-Za-z][A-Za-z0-9_]{3,16}$/
+export const MatchInstanceName = /^[a-z0-9-_.]{3,8}$/
 export const MatchID = {
     World: /^w_[a-f0-9-]{36}$/,
     User: /^u_[a-f0-9-]{36}$/,
     Avatar: /^a_[a-f0-9-]{36}$/,
     File: /^f_[a-f0-9-]{36}$/,
+    Instance: /^i_[a-f0-9-]{36}$/,
+}
+
+export const MatchTags = {
+    Instance: {
+        "avr:public": {
+            for_admin: false,
+            display: "Public",
+            description: "Anyone can join",
+            overhide: []
+        }, 
+        "avr:permanent": {
+            for_admin: true,
+            display: "Permanent",
+            description: "Instance will not be deleted when empty",
+            overhide: ["avr:kill_on_owner_leave"]
+        },
+        "avr:official": {
+            for_admin: true,
+            description: "Instance will be displayed in the official server list",
+            display: "Official",
+        },
+        "avr:friends_plus": {
+            for_admin: false,
+            display: "Friends and friends of friends",
+            description: "Friends of members can join",
+            overhide: ["avr:public"]
+        },
+        "avr:friends_only": {
+            for_admin: false,
+            display: "Friends only",
+            description: "Only friends of owner and master can join",
+            overhide: ["avr:public", "avr:friends_plus"]
+        },
+        "avr:invite_plus": {
+            for_admin: false,
+            display: "Invite Plus",
+            description: "Only invited users by members can join",
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only"]
+        },
+        "avr:invite_only": {
+            for_admin: false,
+            display: "Invite only",
+            description: "Only invited users by owner and master can join",
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus"]
+        },
+        "avr:private": {
+            for_admin: false,
+            display: "Private",
+            description: "Only owner can join",
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus", "avr:invite_only"]
+        },
+    }
 }
 
 
@@ -23,7 +77,8 @@ export const GenerateId = {
     World: () => `w_${randomUUID()}`,
     User: () => `u_${randomUUID()}`,
     Avatar: () => `a_${randomUUID()}`,
-    File: () => `f_${randomUUID()}`
+    File: () => `f_${randomUUID()}`,
+    Instance: () => `i_${randomUUID()}`,
 }
 
 export const TrustedDomzinRegex = [
@@ -276,5 +331,10 @@ export const ErrorCodes = {
         message: "World asset invalid file",
         code: 32,
         status: 400
-    }
+    },
+    InstanceInvalidInput: {
+        message: "Instance invalid input",
+        code: 33,
+        status: 400
+    },
 };

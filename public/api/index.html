@@ -42,6 +42,8 @@
                 <li><a href="#avr_delete_world_asset">avr.deleteWorldAsset</a></li>
 
                 <li><a href="#avr_upload_world_asset_file">avr.uploadWorldAssetFile</a></li>
+
+                <li><a href="#avr_create_instance">avr.createInstance</a></li>
             </ul>
         </nav>
         <div id="avr_get_info">
@@ -210,6 +212,19 @@
                 <input type="text" name="world" placeholder="&lt;world_id&gt;">
                 <input type="text" name="id" placeholder="&lt;asset_id&gt;">
                 <input type="file" name="file" placeholder="&lt;file&gt;" accept=".zip, .avrw">
+                <input type="submit">
+            </form>
+            <code class="source w-100"></code>
+        </div>
+        <hr class="w-100">
+        <div id="avr_create_instance">
+            <h2>Create Instance</h2>
+            <form action="">
+                <input type="text" name="world" placeholder="&lt;world_id&gt;">
+                <input type="text" name="name" placeholder="[&lt;name&gt;]">
+                <input type="text" name="id" placeholder="[&lt;instance_id&gt;]">
+                <input type="text" name="tags" placeholder="[&lt;tags&gt;] (arg1, arg2, ...)">
+                <input type="number" name="capacity" placeholder="[&lt;capacity&gt;] (1..)" min="1" max="256" step="1">
                 <input type="submit">
             </form>
             <code class="source w-100"></code>

@@ -4,8 +4,8 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import crypto from "crypto";
 import fs from "fs";
-import { ContentFileVerification, ErrorCode, LoginInput, ResponseBase, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
-import { MatchDisplay, MatchID, MatchName, MatchPassword, getDefaultUserTags, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "./Constants";
+import { ContentFileVerification, ErrorCode, InstanceInput, LoginInput, ResponseBase, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
+import { MatchDisplay, MatchID, MatchInstanceName, MatchName, MatchPassword, MatchTags, getDefaultUserTags, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "./Constants";
 import e from "express";
 
 export function hash(password: string): string {
@@ -287,5 +287,26 @@ export function checkWorldResponse(world: any): world is WorldInfos {
         && typeof world.fallback === "boolean"
         && typeof world.assets === "object";
     if (!i) return false;
+    return true;
+}
+
+export function checkInstanceInput(input: any, who?: UserInfo): input is InstanceInput {
+    var i = typeof input === "object"
+        && ((typeof input.id === "string" && MatchID.Instance.test(input.id)) || typeof input.id === "undefined")
+        && ((typeof input.name === "string" && MatchInstanceName.test(input.name)) || typeof input.name === "undefined")
+        && ((typeof input.world === "string" && MatchID.World.test(input.world)) || typeof input.world === "undefined")
+        && ((typeof input.capacity === "number" && input.capacity > 0 && input.capacity <= 128) || typeof input.capacity === "undefined")
+        && ((typeof input.version === "string" && input.version.length <= 32) || typeof input.version === "undefined")
+        && ((Array.isArray(input.tags) && input.tags.every((t: any) => typeof t === "string")) || typeof input.tags === "undefined");
+    if (!i) return false;
+    for (const tag of input.tags || [])
+        if (tag in MatchTags.Instance) {
+            const info = MatchTags.Instance[tag as "avr:public"];
+            if (info.for_admin && (!who || !checkUserTags(who, ["avr:admin"])))
+                return false;
+            for (const overhide of info.overhide)
+                if (input.tags.includes(overhide))
+                    return false;
+        }
     return true;
 }

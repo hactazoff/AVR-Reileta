@@ -89,12 +89,14 @@ model Tag {
   updated_at DateTime @default(now())
   created_at DateTime @default(now())
 
-  world     World?  @relation(fields: [world_id], references: [id])
-  world_id  String?
-  user      User?   @relation(fields: [user_id], references: [id])
-  user_id   String?
-  server    Server? @relation(fields: [server_id], references: [id])
-  server_id String?
+  world       World?    @relation(fields: [world_id], references: [id])
+  world_id    String?
+  user        User?     @relation(fields: [user_id], references: [id])
+  user_id     String?
+  server      Server?   @relation(fields: [server_id], references: [id])
+  server_id   String?
+  instance    Instance? @relation(fields: [instance_id], references: [id])
+  instance_id String?
 }
 
 model Server {
@@ -103,6 +105,17 @@ model Server {
   secure     Boolean
   tags       Tag[]
   challenge  String?
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}
+
+model Instance {
+  id         String   @id @unique @default(uuid())
+  name       String
+  capacity   Int
+  world      String
+  owner      String
+  tags       Tag[]
   updated_at DateTime @default(now())
   created_at DateTime @default(now())
 }

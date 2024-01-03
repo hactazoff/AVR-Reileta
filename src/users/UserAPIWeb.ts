@@ -34,7 +34,6 @@ export class UserAPIWeb {
         const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.user);
         if(user instanceof ErrorMessage)
             return response.send(user);
-        console.log(user);
         const res: ResponseUserInfo = {
             id: user.id,
             username: user.username,
@@ -101,7 +100,6 @@ export class UserAPIWeb {
      * @returns
      */
     async getMe(request: ARequest, response: AResponse) {
-        console.log(request.data);
         if(!request.data?.user) 
         return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
         const user = await this.manager.getInternalUser(request.data?.user?.id);

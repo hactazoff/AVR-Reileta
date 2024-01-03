@@ -12,6 +12,7 @@ export class ServerAPISocket {
      * @param socket 
      */
     onConnection(socket: SocketType) {
+        console.log(`Socket ${socket.id} connected.`);
         socket.on('ping', (obj, callback) => this.onPing(socket, obj, callback));
     }
 

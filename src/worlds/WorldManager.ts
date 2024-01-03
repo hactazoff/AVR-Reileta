@@ -338,6 +338,11 @@ export class WorldManager {
         return obj;
     }
 
+    objectToStrId(obj?: { id: string, version?: string, server?: string }) {
+        if (!obj) return null;
+        return `${obj.id}${obj.version ? `:${obj.version}` : ""}${obj.server ? `@${obj.server}` : ""}`;
+    }
+
     async getFallbackWorld(): Promise<WorldInfos | ErrorMessage> {
         const root = await this.app.users.getInternalUser("root");
         if (root instanceof ErrorMessage)

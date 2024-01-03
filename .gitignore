@@ -5,5 +5,5 @@ node_modules
 tmp/*
 rsa/*
 files/*
-prisma/*.db
+prisma/*.db*
 prisma/migrations

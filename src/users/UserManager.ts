@@ -5,12 +5,18 @@ import { ErrorCodes, GenerateId, getCanEditUser, getMyAdress } from "../utils/Co
 import { ErrorMessage, checkUserInput, checkUserResponse, checkUserTags, hash } from "../utils/Security";
 
 export class UserManager {
+    
 
     api_web: UserAPIWeb;
 
     constructor(private readonly app: Reileta) {
         this.api_web = new UserAPIWeb(this.app, this);
         this.checkCreateRootUser();
+    }
+    
+    objectToStrId(obj?: { id: string, server?: string }) {
+        if (!obj) return null;
+        return `${obj.id}${obj.server ? "@" + obj.server : ""}`;
     }
 
     async checkCreateRootUser() {

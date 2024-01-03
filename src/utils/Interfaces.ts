@@ -1,5 +1,5 @@
 import { Session, Tag, User } from "@prisma/client";
-import { Request, Response } from "express";
+import e, { Request, Response } from "express";
 import { Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
@@ -172,6 +172,54 @@ export interface WorldInfos {
     external: boolean;
     fallback: boolean;
     assets: WorldAssetInfos[];
+}
+
+export interface WorldInstanceInfos extends WorldInfos {
+    recommanded_asset_version?: string;
+}
+
+export interface UserInstanceInfos extends UserInfo {
+    connection_id: string;
+    is_moderator: boolean;
+    moderate: boolean;
+}
+
+export interface OwnerInstanceInfos extends UserInfo {}
+export interface MasterInstanceInfos extends UserInfo {}
+
+export interface InstanceInfos {
+    id: string;
+    name: string;
+    world: WorldInstanceInfos;
+    owner: OwnerInstanceInfos
+    master: MasterInstanceInfos | null;
+    capacity: number;
+    server: string;
+    created_at: Date;
+    updated_at: Date;
+    tags: string[];
+    users: UserInstanceInfos[];
+}
+
+export interface ResponseInstanceInfos {
+    id: string;
+    name: string;
+    world: string
+    owner: string
+    master: string | null;
+    capacity: number;
+    server: string;
+    tags: string[];
+    users: any[];
+}
+
+export interface InstanceInput {
+    id?: string;
+    name?: string;
+    world?: string;
+    capacity?: number;
+    version?: string;
+    tags?: string[];
 }
 
 export interface WorldInput {
