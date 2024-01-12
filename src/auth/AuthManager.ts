@@ -4,13 +4,16 @@ import { ErrorMessage, checkLoginInput, checkRegisterInput, checkUserTags, verif
 import { LoginInput, RegisterInput, SessionInfo } from "../utils/Interfaces";
 import { UserInfo } from "../utils/Interfaces";
 import { ErrorCodes, GenerateId, getCanEditUser, getCanLogin, getCanRegister } from "../utils/Constants";
+import { AuthAPISocket } from "./AuthAPISocket";
 
 export class AuthManager {
 
     api_web: AuthAPIWeb;
+    api_socket: AuthAPISocket;
 
     constructor(private readonly app: Reileta) {
         this.api_web = new AuthAPIWeb(this.app, this);
+        this.api_socket = new AuthAPISocket(this.app, this);    
     }
 
     async login(input?: LoginInput, who?: UserInfo): Promise<{ user: UserInfo, session: SessionInfo } | ErrorMessage> {

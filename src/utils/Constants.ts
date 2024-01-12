@@ -345,5 +345,15 @@ export const ErrorCodes = {
         message: "Integrity invalid input",
         code: 34,
         status: 400
-    }
+    },
+    IntegrityNotFound: {
+        message: "Integrity not found",
+        code: 35,
+        status: 404
+    },
+    InstanceNotFound: {
+        message: "Instance not found",
+        code: 36,
+        status: 404
+    },
 };

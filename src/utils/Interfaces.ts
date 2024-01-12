@@ -122,7 +122,15 @@ export interface ErrorCode {
     code: number;
 }
 
-export type SocketType = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
+export interface SocketType extends Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> {
+    old_emit: (event: string, ...args: any[]) => boolean;
+    data: {
+        user_id?: string;
+        session_id?: string;
+        is_internal?: boolean;
+        is_integrity?: boolean;
+    }
+}
 
 export interface PingRequest {
     time: number;
@@ -181,7 +189,9 @@ export interface WorldInstanceInfos extends WorldInfos {
 export interface UserInstanceInfos extends UserInfo {
     connection_id: string;
     is_moderator: boolean;
-    moderate: boolean;
+    is_owner: boolean;
+    is_master: boolean;
+    is_bot: boolean;
 }
 
 export interface OwnerInstanceInfos extends UserInfo {}
@@ -199,6 +209,7 @@ export interface InstanceInfos {
     updated_at: Date;
     tags: string[];
     users: UserInstanceInfos[];
+    sockets: string[];
 }
 
 export interface ResponseInstanceInfos {
@@ -211,6 +222,7 @@ export interface ResponseInstanceInfos {
     server: string;
     tags: string[];
     users: any[];
+    connected: number;
 }
 
 export interface InstanceInput {
@@ -319,4 +331,18 @@ export interface ResponseIntegrityInfo {
     user: string;
     token: string;
     expires_at: number;
+}
+
+export interface RequestSocket<T> {
+    state: string | null;
+    command: string;
+    subgroup: string | null;
+    data: T
+}
+
+export interface ResponseSocket<T> {
+    state: string | null;
+    command: string;
+    subgroup: string | null;
+    data: T
 }

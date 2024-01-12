@@ -14,6 +14,7 @@ Reileta is a system for the management for AtelierVR.
     - [User](#user)
     - [Services](#services)
     - [Worlds](#worlds)
+    - [Integrity](#integrity)
     - [Challenges](#challenges)
     - [Instances](#instances)
   - [WebSocket Connection](#websocket-connection)
@@ -95,7 +96,7 @@ A sample response looks like this:
 
 ### User
 
->Tips: If you use `@me` as user `:id`, you can get the information of the current user.
+>Tips: If you use `@me` as user `:id`, you can get the information about the current user.
 You can find a user by its ID or its name.
 The `:server` parameter is optional and only needed if you want to get the information of a user on a specific server. You can't not use ids with starting with `@`, because they are reserved for the system. For example `@me` is the current user, `@server` is the server, and `@admin` is the main admin of the server.
 
@@ -212,6 +213,10 @@ Sample response:
     "command": RESPONSE_EVENT,
     "subgroup": RESPONSE_SUBGROUP,
     "data": DATA_OBJECT | undefined,
+    "error": {
+        "code": ERROR_CODE,
+        "message": ERROR_MESSAGE
+    } | undefined
 }
 ```
 
@@ -219,6 +224,8 @@ Sample response:
 - `RESPONSE_EVENT` is the event of the response.
 - `RESPONSE_SUBGROUP` is the subgroup of the response.
 - `DATA_OBJECT` is the data of the response.
+- `ERROR_CODE` is the error code of the response.
+- `ERROR_MESSAGE` is the error message of the response.
 
 #### General
 

@@ -4,7 +4,9 @@ import { PingRequest, PingResponse, SocketType } from "../utils/Interfaces";
 
 export class ServerAPISocket {
     constructor(private readonly app: Reileta, private readonly manager: ServerManager) {
-        this.app.io.on('connection', (socket) => this.onConnection(socket));
+        // event preconnection
+        this.app.io.use((socket: any, next) => this.onPreConnection(socket, next));
+        this.app.io.on('connection', (socket: any) => this.onConnection(socket));
     }
 
     /**
@@ -12,13 +14,31 @@ export class ServerAPISocket {
      * @param socket 
      */
     onConnection(socket: SocketType) {
-        console.log(`Socket ${socket.id} connected.`);
-        // on any event
-        socket.onAny((event, ...args) => {
-            if (event !== 'ping')
-                console.log(`Socket ${socket.id} emitted event ${event}.`);
-        });
         socket.on('ping', (obj, callback) => this.onPing(socket, obj, callback));
+    }
+
+    /**
+     * When a socket is connecting
+     * @param socket 
+     * @param next 
+     */
+    onPreConnection(socket: SocketType, next: (err?: any) => void) {
+        socket.old_emit = socket.emit;
+        socket.data = {};
+        socket.onAny((event, ...args) => {
+            if (event !== 'ping' && args.every(ar => ar.command !== 'transform')) {
+                console.log(`Socket ${socket.id} received event ${event}.`);
+                console.dir(args, { depth: Infinity });
+            }
+        });
+        socket.emit = (event, ...args) => {
+            if (event !== 'ping' && args.every(ar => ar.command !== 'transform')) {
+                console.log(`Socket ${socket.id} emitted event ${event}.`);
+                console.dir(args, { depth: Infinity });
+            }
+            return socket.old_emit(event, ...args);
+        }
+        next();
     }
 
     /**

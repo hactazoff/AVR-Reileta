@@ -129,4 +129,30 @@ export class IntegrityManager {
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }
+
+    async getIntegrity(integrity: string): Promise<IntegrityInfo | ErrorMessage> {
+        try {
+            let i = await this.app.prisma.integrity.findFirst({
+                where: { token: integrity, expire_at: { gt: new Date() } }
+            });
+            if (!i)
+                return new ErrorMessage(ErrorCodes.IntegrityNotFound);
+            var user = await this.app.users.getInternalUser(i.user);
+            if (user instanceof ErrorMessage)
+                return user;
+            var server = await this.app.server.getServer(user.server);
+            if (!server)
+                return new ErrorMessage(ErrorCodes.ServerNotFound);
+            return {
+                id: i.id,
+                user: user,
+                token: i.token,
+                expires_at: i.expire_at,
+                server: server
+            }
+        } catch (e) {
+            console.warn(e);
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
 }

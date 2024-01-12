@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import crypto from "crypto";
 import fs from "fs";
-import { ContentFileVerification, ErrorCode, InstanceInput, IntegrityInput, IntegrityServerInput, LoginInput, ResponseBase, ResponseIntegrityInfo, ResponseIntegrityServer, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
+import { ContentFileVerification, ErrorCode, InstanceInput, IntegrityInput, IntegrityServerInput, LoginInput, RequestSocket, ResponseBase, ResponseIntegrityInfo, ResponseIntegrityServer, ResponseServerInfo, ResponseUserInfo, UserInfo, UserInput, WorldAssetInput, WorldInfos, WorldInput, WorldSearchInput } from "./Interfaces";
 import { MatchDisplay, MatchID, MatchInstanceName, MatchName, MatchPassword, MatchTags, getDefaultUserTags, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "./Constants";
 import e from "express";
 
@@ -341,4 +341,12 @@ export function checkIntegrityServerInput(input: any): input is IntegrityServerI
         && typeof input.user === "string";
     if (!i) return false;
     return true;
+}
+
+export function checkRequestSocket<T>(obj: any, data_type: string = "object"): obj is RequestSocket<T> {
+    return typeof obj === "object"
+        && (typeof obj.state === "string" || typeof obj.state === "undefined" || obj.state === null)
+        && typeof obj.command === "string"
+        && (typeof obj.subgroup === "string" || typeof obj.subgroup === "undefined" || obj.subgroup === null)
+        && typeof obj.data === data_type;
 }
