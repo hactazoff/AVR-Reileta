@@ -5,7 +5,7 @@ import { HomeManager } from "./HomeManager";
 
 export class HomeAPIWeb {
     constructor(private readonly app: Reileta, private readonly manager: HomeManager) {
-        // this.app.express.get('/api/users/@me/home', (q, s: any) => this.getMyHome(q, s));
+        this.app.express.get('/api/users/@me/home', (q, s: any) => this.getMyHome(q, s));
         this.app.express.get('/api/users/:id/home', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
     }
 
