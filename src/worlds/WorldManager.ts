@@ -93,9 +93,9 @@ export class WorldManager {
             ) return new ErrorMessage(ErrorCodes.WorldAssetPreventUploadError);
             if (!checkUserTags(who, ['avr:admin']) && !getCanEditWorld() && who?.id !== world.owner_id)
                 return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            var out = await checkValidityWorldAsset(file, asset_obj.engine, asset_obj.platform);
-            if (!out || out.content_type !== "world" || out.platform !== asset_obj.platform || out.engine !== asset_obj.engine)
-                return new ErrorMessage(ErrorCodes.WorldAssetInvalidFile);
+            // var out = await checkValidityWorldAsset(file, asset_obj.engine, asset_obj.platform);
+            // if (!out || out.content_type !== "world" || out.platform !== asset_obj.platform || out.engine !== asset_obj.engine)
+            //     return new ErrorMessage(ErrorCodes.WorldAssetInvalidFile);
             const hash = hashFile(file.path);
             const size = statSync(file.path).size;
             renameSync(file.path, join(getFilePath(), hash));

@@ -104,7 +104,7 @@ export function checkValidityWorldAsset(file: Express.Multer.File, engine: strin
 export async function getContentType(path: string) {
     // invoke "python3 ./get_content_type.py <path>"
     // and return the output
-    const py = spawn('python3', [join(__dirname, 'get_content_type.py'), path]);
+    const py = spawn('python', [join(__dirname, 'get_content_type.py'), path]);
     return new Promise<Object | null>((resolve, reject) => {
         py.stdout.on('data', (data: string) => {
             try {
