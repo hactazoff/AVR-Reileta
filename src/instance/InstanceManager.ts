@@ -25,19 +25,14 @@ export class InstanceManager {
      */
     async getInstance(id: string, who?: UserInfo): Promise<InstanceInfos | ErrorMessage> {
         try {
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
             if (!id || typeof id !== 'string')
                 return new ErrorMessage(ErrorCodes.InstanceInvalidInput);
-
             const instance = await this.app.prisma.instance.findUnique({
                 where: { id },
                 include: { tags: true }
             });
-
             if (!instance)
                 return new ErrorMessage(ErrorCodes.InstanceNotFound);
-
             const world = this.app.worlds.strIdToObject(instance.world);
             if (!world)
                 return new ErrorMessage(ErrorCodes.WorldNotFound);
@@ -47,17 +42,15 @@ export class InstanceManager {
             else worldobj = await this.app.worlds.getInternalWorld(world.id, who);
             if (worldobj instanceof ErrorMessage)
                 return worldobj;
-
             const owner = this.app.users.strToObject(instance.owner);
             if (!owner)
                 return new ErrorMessage(ErrorCodes.UserNotFound);
             let ownerobj: UserInfo | ErrorMessage;
-            if (owner.server)
+            if (owner.server && owner.server !== getMyAdress())
                 ownerobj = await this.app.users.getExternalUser(owner.id, owner.server, who);
             else ownerobj = await this.app.users.getInternalUser(owner.id);
             if (ownerobj instanceof ErrorMessage)
                 return ownerobj;
-
             let users: UserInstanceInfos[] = [];
             const sockets = this.app.io.sockets.adapter.rooms.get('instance:' + instance.id);
             if (sockets) {
@@ -69,7 +62,7 @@ export class InstanceManager {
                     if (!user)
                         continue;
                     let userobj: UserInfo | ErrorMessage;
-                    if (user.server)
+                    if (user.server && user.server !== getMyAdress())
                         userobj = await this.app.users.getExternalUser(user.id, user.server, who);
                     else userobj = await this.app.users.getInternalUser(user.id);
                     if (userobj instanceof ErrorMessage)

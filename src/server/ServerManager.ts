@@ -234,6 +234,8 @@ export class ServerManager {
                 body: options.body || undefined
             });
 
+            
+
             let body = await res.json();
 
             if (!body)

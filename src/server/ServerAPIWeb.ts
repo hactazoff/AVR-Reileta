@@ -8,12 +8,23 @@ import { ErrorMessage } from "../utils/Security";
 export class ServerAPIWeb {
     constructor(private readonly app: Reileta, private readonly manager: ServerManager) {
         this.app.express.get('/api/server@:server', (q, s: any) => this.getExternalInfo(q, s));
-        
+
         // TODO: Server API
         this.app.express.get('/api/server', (q, s: any) => this.getInfo(s));
         this.app.express.post('/api/server', Express.json(), (q, s: any) => this.notImplemented(q, s));
 
         this.app.express.get('/api/time', (q, s: any) => this.getTime(s));
+
+        this.app.express.use('/.well-known/avr', (q, s: any) => this.wellKnownAVR(q, s));
+    }
+
+    /**
+     * Well known AVR
+     * @param request 
+     * @param response 
+     */
+    wellKnownAVR(request: ARequest, response: AResponse) {
+        response.sendStatus(200);
     }
 
     async getExternalInfo(request: ARequest, response: AResponse) {
@@ -87,7 +98,7 @@ export class ServerAPIWeb {
      */
     private responseSender(request: ARequest, response: AResponse, next: NextFunction, obj: any) {
         if (typeof obj === 'object') {
-            if(obj instanceof ErrorMessage)
+            if (obj instanceof ErrorMessage)
                 obj = { error: obj };
             if (obj.error) {
                 if (typeof obj.error.status !== 'number')

@@ -5,7 +5,7 @@ import { ErrorCodes, GenerateId, getCanEditUser, getMyAdress } from "../utils/Co
 import { ErrorMessage, checkUserInput, checkUserResponse, checkUserTags, hash } from "../utils/Security";
 
 export class UserManager {
-    
+
 
     api_web: UserAPIWeb;
 
@@ -13,7 +13,7 @@ export class UserManager {
         this.api_web = new UserAPIWeb(this.app, this);
         this.checkCreateRootUser();
     }
-    
+
     objectToStrId(obj?: { id: string, server?: string }) {
         if (!obj) return null;
         return `${obj.id}${obj.server ? "@" + obj.server : ""}`;
@@ -27,19 +27,28 @@ export class UserManager {
 
     async checkCreateRootUser() {
         try {
-            const root = await this.app.prisma.user.findUnique({ where: { name: "root" } });
+            let root = await this.app.prisma.user.findUnique({ where: { name: "root" } });
             if (!root) {
-                await this.app.prisma.user.create({
+                root = await this.app.prisma.user.create({
                     data: {
                         id: GenerateId.User(),
                         name: "root",
                         display: "AVR Root User",
                         created_at: new Date(),
                         updated_at: new Date(),
-                        tags: { create: [{ name: "avr:admin" }] }
-                    }
+                        tags: {
+                            create: [
+                                { name: "avr:admin" },
+                                { name: "avr:bot" },
+                            ]
+                        }
+                    },
+                    include: { tags: true }
                 });
-                console.log("Root user created");
+                let session = await this.app.sessions.createSession({ id: root.id });
+                if (session instanceof ErrorMessage) 
+                    return console.error(session);
+                console.log(`Root user created with id ${root.id} and session ${session.id}`);
             }
         } catch (e) {
             console.error(e);
@@ -97,7 +106,7 @@ export class UserManager {
             if (!server)
                 return new ErrorMessage(ErrorCodes.ServerNotFound);
             const res = await this.app.server.fetch<any>(server.gateways.http.origin, '/api/users/' + search);
-            if(res.error)
+            if (res.error)
                 console.warn(res.error);
             if (res.error || !checkUserResponse(res.data))
                 return new ErrorMessage(ErrorCodes.UserNotFound);

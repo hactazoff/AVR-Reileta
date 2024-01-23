@@ -85,6 +85,7 @@ export class AuthAPIWeb {
             session: undefined,
             user: undefined
         };
+        console.log(request.data);
         next();
     }
 }
