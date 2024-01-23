@@ -18,6 +18,7 @@ import { getMyAdress, getName, getPort, getTmpFileExpiration, isSecure } from ".
 import { HomeManager } from "./home/HomeManager";
 import { InstanceManager } from "./instance/InstanceManager";
 import { IntegrityManager } from "./integrity/IntegrityManager";
+import { FollowManager } from "./followers/FollowManager";
 
 export class Reileta extends EventEmitter {
 
@@ -41,6 +42,7 @@ export class Reileta extends EventEmitter {
     home: HomeManager;
     instances: InstanceManager;
     integrity: IntegrityManager;
+    follows: FollowManager;
 
     constructor() {
         super();
@@ -82,7 +84,6 @@ export class Reileta extends EventEmitter {
         // Reférencement des Managers
         this.express.use((q, s: any, n) => this.auth.api_web.use(q, s, n));
         this.express.use((q, s: any, n) => this.sessions.api_web.use(q, s, n));
-        this.express.use((q, s: any, n) => this.users.api_web.use(q, s, n));
 
         // Initialise les managers
         this.prisma = new PrismaClient();
@@ -94,6 +95,7 @@ export class Reileta extends EventEmitter {
         this.home = new HomeManager(this);
         this.instances = new InstanceManager(this);
         this.integrity = new IntegrityManager(this);
+        this.follows = new FollowManager(this); 
 
 
         // Reférence le gestionnaire de plugins

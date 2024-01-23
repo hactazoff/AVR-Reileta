@@ -137,7 +137,11 @@ export class IntegrityManager {
             });
             if (!i)
                 return new ErrorMessage(ErrorCodes.IntegrityNotFound);
-            var user = await this.app.users.getInternalUser(i.user);
+            var up = this.app.users.strToObject(i.user);
+            let user: UserInfo | ErrorMessage;
+            if(up?.server && up.server != getMyAdress())
+                user = await this.app.users.getExternalUser(up.id, up.server);
+            else user = await this.app.users.getInternalUser(up?.id);
             if (user instanceof ErrorMessage)
                 return user;
             var server = await this.app.server.getServer(user.server);

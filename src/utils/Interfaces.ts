@@ -6,7 +6,6 @@ import { DefaultEventsMap } from "socket.io/dist/typed-events";
 export interface ARequest extends Request {
     data?: {
         token?: string
-        user?: UserInfo
         session?: SessionInfo
     }
 }
@@ -31,6 +30,7 @@ export interface ResponseBase<T> {
 export interface SessionInfo {
     id: string,
     user_id: string,
+    user: UserInfo,
     token: string,
     created_at: Date
 }
@@ -345,4 +345,10 @@ export interface ResponseSocket<T> {
     command: string;
     subgroup: string | null;
     data: T
+}
+
+export interface FollowInfo {
+    id: string;
+    from: UserInfo;
+    to: UserInfo;
 }
