@@ -65,6 +65,7 @@ export interface ResponseUserInfo {
 }
 export interface ResponseUserMeInfo extends ResponseUserInfo {
     friends: string[],
+    home?: string,
     status: string,
 }
 

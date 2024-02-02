@@ -32,7 +32,7 @@ export class UserAPIWeb {
      */
     async getExternalUser(request: ARequest, response: AResponse) {
         const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.user);
-        if(user instanceof ErrorMessage)
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
             id: user.id,
@@ -55,7 +55,7 @@ export class UserAPIWeb {
      */
     async getInternalUser(request: ARequest, response: AResponse) {
         const user = await this.manager.getInternalUser(request.params.id);
-        if(user instanceof ErrorMessage)
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
             id: user.id,
@@ -78,7 +78,7 @@ export class UserAPIWeb {
      */
     async postInternalUser(request: ARequest, response: AResponse) {
         const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if(user instanceof ErrorMessage)
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
             id: user.id,
@@ -100,10 +100,10 @@ export class UserAPIWeb {
      * @returns
      */
     async getMe(request: ARequest, response: AResponse) {
-        if(!request.data?.user) 
-        return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        if (!request.data?.user)
+            return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
         const user = await this.manager.getInternalUser(request.data?.user?.id);
-        if(user instanceof ErrorMessage)
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
@@ -111,6 +111,10 @@ export class UserAPIWeb {
             display: user.display,
             thumbnail: user.thumbnail?.href,
             banner: user.banner?.href,
+            home: user.home || (await (async () => {
+                var e = await this.app.worlds.getFallbackWorld();
+                return e instanceof ErrorMessage ? undefined : this.app.worlds.objectToStrId(e);
+            })()) || undefined,
             friends: [],
             status: "offline",
             tags: user.tags,
@@ -128,7 +132,7 @@ export class UserAPIWeb {
      */
     async postMe(request: ARequest, response: AResponse) {
         const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if(user instanceof ErrorMessage)
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
