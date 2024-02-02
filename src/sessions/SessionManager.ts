@@ -4,7 +4,7 @@ import { SessionAPIWeb } from "./SessionAPIWeb";
 import { Session } from "@prisma/client";
 import { SessionInfo, UserInfo, UserInput } from "../utils/Interfaces";
 import { ErrorMessage, checkUserTags, generateSessionToken } from "../utils/Security";
-import { ErrorCodes } from "../utils/Constants";
+import { ErrorCodes, getMyAdress } from "../utils/Constants";
 
 export class SessionManager {
 
@@ -26,12 +26,18 @@ export class SessionManager {
             const session = await this.app.prisma.session.findFirst({
                 where: { OR: [{ id: search }, { token: search }] }
             });
-            return session ? {
+            if (!session)
+                return new ErrorMessage(ErrorCodes.SessionNotFound);
+            let user = await this.app.users.getInternalUser(session.user_id);
+            if (user instanceof ErrorMessage)
+                return user;
+            return {
                 id: session.id,
                 token: session.token,
                 created_at: session.created_at,
-                user_id: session.user_id
-            } : new ErrorMessage(ErrorCodes.SessionNotFound);
+                user_id: session.user_id,
+                user: user
+            }
         } catch (e) {
             console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
@@ -47,9 +53,21 @@ export class SessionManager {
         try {
             if (!user)
                 return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            return await this.app.prisma.session.create({
+            let session = await this.app.prisma.session.create({
                 data: { user_id: user.id, token: generateSessionToken() }
             });
+            if (!session)
+                return new ErrorMessage(ErrorCodes.InternalError);
+            let user_info = await this.app.users.getInternalUser(user.id);
+            if (user_info instanceof ErrorMessage)
+                return user_info;
+            return {
+                id: session.id,
+                token: session.token,
+                created_at: session.created_at,
+                user_id: session.user_id,
+                user: user_info
+            }
         } catch (e) {
             console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);

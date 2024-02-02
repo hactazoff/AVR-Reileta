@@ -24,7 +24,7 @@ export class InstanceAPIWeb {
     }
 
     async createInstance(req: ARequest, res: AResponse) {
-        var instance = await this.manager.createInstance(req.body, req.data?.user);
+        var instance = await this.manager.createInstance(req.body, req.data?.session?.user);
         if (instance instanceof ErrorMessage)
             return res.send({ error: instance });
         var data: ResponseInstanceInfos = {
@@ -43,7 +43,7 @@ export class InstanceAPIWeb {
     }
 
     async getInstance(req: ARequest, res: AResponse) {
-        var instance = await this.manager.getInstance(req.params.id, req.data?.user);
+        var instance = await this.manager.getInstance(req.params.id, req.data?.session?.user);
         if (instance instanceof ErrorMessage)
             return res.send({ error: instance });
         var data: ResponseInstanceInfos = {

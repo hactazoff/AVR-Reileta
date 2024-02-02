@@ -28,7 +28,7 @@ export class ServerAPIWeb {
     }
 
     async getExternalInfo(request: ARequest, response: AResponse) {
-        const server = await this.manager.getExternalServer(request.params.server, request.data?.user);
+        const server = await this.manager.getExternalServer(request.params.server, request.data?.session?.user);
     }
 
     /**

@@ -356,4 +356,9 @@ export const ErrorCodes = {
         code: 36,
         status: 404
     },
+    AlreadyFollowing: {
+        message: "Already following",
+        code: 37,
+        status: 409
+    },
 };

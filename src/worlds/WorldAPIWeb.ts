@@ -39,7 +39,7 @@ export class WorldAPIWeb {
     }
 
     async getWorldAssetFile(request: ARequest, response: AResponse) {
-        const world = await this.manager.getInternalWorldAssetFile(request.params.id, request.params.asset, request.data?.user);
+        const world = await this.manager.getInternalWorldAssetFile(request.params.id, request.params.asset, request.data?.session?.user);
         if (world instanceof ErrorMessage)
             return response.send(world);
         if(world.is_url)
@@ -48,14 +48,14 @@ export class WorldAPIWeb {
     }
 
     async uploadWorldAssetFile(request: ARequest, response: AResponse) {
-        const world = await this.manager.uploadInternalWorldAssetFile(request.params.id, request.params.asset, request.file, request.data?.user);
+        const world = await this.manager.uploadInternalWorldAssetFile(request.params.id, request.params.asset, request.file, request.data?.session?.user);
         if(world instanceof ErrorMessage)
             return response.send(world);
         response.send({ data: "UPLOADED" });
     }
 
     async makeWorld(request: ARequest, response: AResponse) {
-        const world = await this.manager.createInternalWorld(request.body, request.data?.user);
+        const world = await this.manager.createInternalWorld(request.body, request.data?.session?.user);
         if (world instanceof ErrorMessage)
             return response.send(world);
         const res: ResponseWorldInfo = {
@@ -84,7 +84,7 @@ export class WorldAPIWeb {
     }
 
     async getWorld(request: ARequest, response: AResponse) {
-        const world = await this.manager.getInternalWorld(request.params.id, request.data?.user);
+        const world = await this.manager.getInternalWorld(request.params.id, request.data?.session?.user);
         if (world instanceof ErrorMessage)
             return response.send(world);
         const res: ResponseWorldInfo = {
@@ -113,7 +113,7 @@ export class WorldAPIWeb {
     }
 
     async uploadWorld(request: ARequest, response: AResponse) {
-        const world = await this.manager.uploadInternalWorld(request.params.id, request.body, request.data?.user);
+        const world = await this.manager.uploadInternalWorld(request.params.id, request.body, request.data?.session?.user);
         if (world instanceof ErrorMessage)
             return response.send(world);
         const res: ResponseWorldInfo = {
@@ -142,12 +142,12 @@ export class WorldAPIWeb {
     }
 
     async deleteWorld(request: ARequest, response: AResponse) {
-        const world = await this.manager.deleteInternalWorld(request.params.id, request.data?.user);
+        const world = await this.manager.deleteInternalWorld(request.params.id, request.data?.session?.user);
         response.send(world instanceof ErrorMessage ? world : { data: "DELETED" });
     }
 
     async makeWorldAsset(request: ARequest, response: AResponse) {
-        const asset = await this.manager.createInternalWorldAsset(request.params.id, request.body, request.data?.user);
+        const asset = await this.manager.createInternalWorldAsset(request.params.id, request.body, request.data?.session?.user);
         if (asset instanceof ErrorMessage)
             return response.send(asset);
         const res: ResponseWorldAssetInfo = {
@@ -164,7 +164,7 @@ export class WorldAPIWeb {
     }
 
     async getInternalWorldAsset(request: ARequest, response: AResponse) {
-        const world = await this.manager.getInternalWorldAsset(request.params.id, request.params.asset, request.data?.user);
+        const world = await this.manager.getInternalWorldAsset(request.params.id, request.params.asset, request.data?.session?.user);
         if (world instanceof ErrorMessage)
             return response.send(world);
         const res: ResponseWorldAssetInfo = {
@@ -181,22 +181,22 @@ export class WorldAPIWeb {
     }
 
     async uploadWorldAsset(request: ARequest, response: AResponse) {
-        const world = await this.manager.uploadInternalWorldAsset(request.params.id, request.params.asset, request.body, request.data?.user);
+        const world = await this.manager.uploadInternalWorldAsset(request.params.id, request.params.asset, request.body, request.data?.session?.user);
         response.send(world instanceof ErrorMessage ? world : { data: world });
     }
 
     async deleteWorldAsset(request: ARequest, response: AResponse) {
-        const world = await this.manager.deleteInternalWorldAsset(request.params.id, request.params.asset, request.data?.user);
+        const world = await this.manager.deleteInternalWorldAsset(request.params.id, request.params.asset, request.data?.session?.user);
         response.send(world instanceof ErrorMessage ? world : { data: "DELETED" });
     }
 
     async getExternalWorld(request: ARequest, response: AResponse) {
-        const world = await this.manager.getExternalWorld(request.params.id, request.params.server, request.data?.user);
+        const world = await this.manager.getExternalWorld(request.params.id, request.params.server, request.data?.session?.user);
         response.send(world instanceof ErrorMessage ? world : { data: world });
     }
 
     async getExternalWorldAsset(request: ARequest, response: AResponse) {
-        const world = await this.manager.getExternalWorldAsset(request.params.id, request.params.asset, request.params.server, request.data?.user);
+        const world = await this.manager.getExternalWorldAsset(request.params.id, request.params.asset, request.params.server, request.data?.session?.user);
         response.send(world instanceof ErrorMessage ? world : { data: world });
     }
 

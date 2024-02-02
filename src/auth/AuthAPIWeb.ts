@@ -15,7 +15,7 @@ export class AuthAPIWeb {
     }
 
     async getLogin(request: ARequest, response: AResponse) {
-        const logged = await this.manager.login(request.body, request.data?.user);
+        const logged = await this.manager.login(request.body, request.data?.session?.user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.cookie(CookieValue, logged.session.token);
@@ -40,7 +40,7 @@ export class AuthAPIWeb {
     }
 
     async getLogout(request: ARequest, response: AResponse) {
-        const logged = await this.manager.logout(request.data?.session, request.data?.user);
+        const logged = await this.manager.logout(request.data?.session, request.data?.session?.user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.clearCookie(CookieValue);
@@ -48,7 +48,7 @@ export class AuthAPIWeb {
     }
 
     async postDetele(request: ARequest, response: AResponse) {
-        const logged = await this.manager.delete(request.data?.user);
+        const logged = await this.manager.delete(request.data?.session?.user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.clearCookie(CookieValue);
@@ -56,7 +56,7 @@ export class AuthAPIWeb {
     }
 
     async getRegister(request: ARequest, response: AResponse) {
-        const logged = await this.manager.register(request.body, request.data?.user);
+        const logged = await this.manager.register(request.body, request.data?.session?.user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.cookie(CookieValue, logged.session.token);
@@ -81,9 +81,9 @@ export class AuthAPIWeb {
 
     use(request: ARequest, response: AResponse, next: NextFunction) {
         request.data = {
-            token: (typeof request.query.authuser === "string" && request.query.authuser) || request.get('Authorization') || request.cookies[CookieValue],
-            session: undefined,
-            user: undefined
+            token: (typeof request.query.authuser === "string" && request.query.authuser) 
+                || request.get('Authorization') || request.cookies[CookieValue],
+            session: undefined
         };
         console.log(request.data);
         next();

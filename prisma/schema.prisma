@@ -6,13 +6,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id         String     @id @unique @default(uuid())
-  name       String     @unique
+  id         String    @id @unique @default(uuid())
+  name       String    @unique
   display    String?
   sessions   Session[]
   password   String?
@@ -22,9 +22,9 @@ model User {
   email      String?
   home       String? // <id>@<address> (world)
   avatar     String? // <id>@<address> (avatar)
-  follower   Follower[]
-  updated_at DateTime   @default(now())
-  created_at DateTime   @default(now())
+  follows    Follow[]
+  updated_at DateTime  @default(now())
+  created_at DateTime  @default(now())
   worlds     World[]
 }
 
@@ -46,11 +46,12 @@ model Integrity {
   create_at  DateTime @default(now())
 }
 
-model Follower {
+model Follow {
   id         String   @id @unique @default(uuid())
-  user_id    String
-  user       User     @relation(fields: [user_id], references: [id])
-  follower   String // <id>@<address> (user)
+  from_id    String
+  from       User     @relation(fields: [from_id], references: [id])
+  to_id      String
+  is_out     Boolean // if true, from is internal user, is following other user
   updated_at DateTime @default(now())
   created_at DateTime @default(now())
 }

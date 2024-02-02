@@ -15,7 +15,7 @@ export class IntegrityAPIWeb {
     }
 
     async onPost(request: ARequest, response: AResponse) {
-        const integrity = await this.manager.createIntegrity(request.body, request.data?.user);
+        const integrity = await this.manager.createIntegrity(request.body, request.data?.session?.user);
         if (integrity instanceof ErrorMessage)
             return response.send({ error: integrity });
         var data: ResponseIntegrityInfo = {

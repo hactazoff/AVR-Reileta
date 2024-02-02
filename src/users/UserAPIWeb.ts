@@ -31,6 +31,8 @@ export class UserAPIWeb {
      * @returns
      */
     async getExternalUser(request: ARequest, response: AResponse) {
+        const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.session?.user);
+        if(user instanceof ErrorMessage)
         const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.user);
         if (user instanceof ErrorMessage)
             return response.send(user);
@@ -78,7 +80,7 @@ export class UserAPIWeb {
      */
     async postInternalUser(request: ARequest, response: AResponse) {
         const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if (user instanceof ErrorMessage)
+        if(user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
             id: user.id,
@@ -100,10 +102,10 @@ export class UserAPIWeb {
      * @returns
      */
     async getMe(request: ARequest, response: AResponse) {
-        if (!request.data?.user)
-            return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        if(!request.data?.user) 
+        return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
         const user = await this.manager.getInternalUser(request.data?.user?.id);
-        if (user instanceof ErrorMessage)
+        if(user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
@@ -132,7 +134,7 @@ export class UserAPIWeb {
      */
     async postMe(request: ARequest, response: AResponse) {
         const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if (user instanceof ErrorMessage)
+        if(user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
@@ -147,20 +149,5 @@ export class UserAPIWeb {
             server: user.server,
         }
         response.send({ data: res });
-    }
-
-    /**
-     * Middleware to get the user from the session
-     * @param request
-     * @param response
-     * @param next
-     * @returns
-     */
-    async use(request: ARequest, _: AResponse, next: NextFunction) {
-        if (request.data && request.data.session) {
-            const out = await this.manager.getInternalUser(request.data.session.user_id);
-            request.data.user = out instanceof ErrorMessage ? undefined : out;
-        }
-        next();
     }
 }

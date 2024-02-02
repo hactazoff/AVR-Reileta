@@ -52,18 +52,10 @@ export class AuthAPISocket {
             data: { success: false },
             error: session
         } as ResponseSocket<any>);
-        let user = await this.app.users.getInternalUser(session.user_id);
-        if (user instanceof ErrorMessage) return socket.emit('local', {
-            state: obj.state,
-            command: obj.command,
-            subgroup: obj.subgroup,
-            data: { success: false },
-            error: user
-        } as ResponseSocket<any>);
-        socket.join('avr:user:' + user.id);
-        if (user.tags.includes('avr:admin'))
+        socket.join('avr:user:' + session.user.id);
+        if (session.user.tags.includes('avr:admin'))
             socket.join('avr:admin');
-        socket.data.user_id = user.id;
+        socket.data.user_id = session.user_id;
         socket.data.session_id = session.id;
         socket.data.is_internal = true;
         socket.data.is_integrity = false;
@@ -78,7 +70,6 @@ export class AuthAPISocket {
 
     async onAuthenticateWithIntegrity(socket: SocketType, integrity: string, obj: RequestSocket<any>) {
         let session = await this.app.integrity.getIntegrity(integrity);
-        console.log(session);
         if (session instanceof ErrorMessage) return socket.emit('local', {
             state: obj.state,
             command: obj.command,

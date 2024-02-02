@@ -10,7 +10,7 @@ export class HomeAPIWeb {
     }
 
     async getMyHome(request: ARequest, response: AResponse) {
-        const logged = await this.manager.getHome(request.data?.user?.id, request.data?.user);
+        const logged = await this.manager.getHome(request.data?.session?.user?.id, request.data?.session?.user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         const res: ResponseHomeInfo = {
