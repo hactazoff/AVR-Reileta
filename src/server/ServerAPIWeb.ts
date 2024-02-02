@@ -58,7 +58,6 @@ export class ServerAPIWeb {
         let ip = request.headers['cf-connecting-ip'] || request.headers['x-forwarded-for'] || request.connection.remoteAddress;
         console.log(ip, '>', request.method.toUpperCase(), request.url);
         response.oldSend = response.send;
-        console.log(request.headers);
         response.send = (obj: any) => this.responseSender(request, response, next, obj);
         if (!this.app.serviceEnabled())
             return response.send({ error: ErrorCodes.ServiceDisabled });

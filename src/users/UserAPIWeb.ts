@@ -32,8 +32,6 @@ export class UserAPIWeb {
      */
     async getExternalUser(request: ARequest, response: AResponse) {
         const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.session?.user);
-        if(user instanceof ErrorMessage)
-        const user = await this.manager.getExternalUser(request.params.id, request.params.server, request.data?.user);
         if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
@@ -79,8 +77,8 @@ export class UserAPIWeb {
      * @returns
      */
     async postInternalUser(request: ARequest, response: AResponse) {
-        const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if(user instanceof ErrorMessage)
+        const user = await this.manager.updateInternalUser(request.body, request.data?.session?.user);
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserInfo = {
             id: user.id,
@@ -102,10 +100,10 @@ export class UserAPIWeb {
      * @returns
      */
     async getMe(request: ARequest, response: AResponse) {
-        if(!request.data?.user) 
-        return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
-        const user = await this.manager.getInternalUser(request.data?.user?.id);
-        if(user instanceof ErrorMessage)
+        if (!request.data?.session?.user)
+            return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        const user = await this.manager.getInternalUser(request.data?.session?.user?.id);
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
@@ -133,8 +131,8 @@ export class UserAPIWeb {
      * @returns
      */
     async postMe(request: ARequest, response: AResponse) {
-        const user = await this.manager.updateInternalUser(request.body, request.data?.user);
-        if(user instanceof ErrorMessage)
+        const user = await this.manager.updateInternalUser(request.body, request.data?.session?.user);
+        if (user instanceof ErrorMessage)
             return response.send(user);
         const res: ResponseUserMeInfo = {
             id: user.id,
