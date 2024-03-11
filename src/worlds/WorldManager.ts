@@ -149,7 +149,7 @@ export class WorldManager {
                     updated_at: a.updated_at
                 })),
                 external: false,
-                fallback: false
+                fallback: getFallbackWorld() === world.id
             }
         } catch (e) {
             console.error(e);

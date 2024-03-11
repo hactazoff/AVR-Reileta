@@ -267,7 +267,8 @@ export function checkWorldAssetInput(asset: any, id_optional = false): asset is 
         && ((typeof asset.version === "string" && asset.version.length <= 32) || typeof asset.version === "undefined")
         && ((typeof asset.engine === "string" && getSupportedWorldAssetEngine().includes(asset.engine)) || typeof asset.engine === "undefined")
         && ((typeof asset.platform === "string" && getSupportedWorldAssetPlatforms().includes(asset.platform)) || typeof asset.platform === "undefined")
-    if (!i) return false;
+    console.log(i, asset, getSupportedWorldAssetEngine(), getSupportedWorldAssetPlatforms());
+        if (!i) return false;
     return true;
 }
 

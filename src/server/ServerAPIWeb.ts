@@ -12,9 +12,7 @@ export class ServerAPIWeb {
         // TODO: Server API
         this.app.express.get('/api/server', (q, s: any) => this.getInfo(s));
         this.app.express.post('/api/server', Express.json(), (q, s: any) => this.notImplemented(q, s));
-
         this.app.express.get('/api/time', (q, s: any) => this.getTime(s));
-
         this.app.express.use('/.well-known/avr', (q, s: any) => this.wellKnownAVR(q, s));
     }
 
@@ -56,7 +54,7 @@ export class ServerAPIWeb {
      */
     useBefore(request: ARequest, response: AResponse, next: NextFunction) {
         let ip = request.headers['cf-connecting-ip'] || request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-        console.log(ip, '>', request.method.toUpperCase(), request.url);
+        console.log(new Date().toISOString(), '|', ip, '>', request.method.toUpperCase(), request.url);
         response.oldSend = response.send;
         response.send = (obj: any) => this.responseSender(request, response, next, obj);
         if (!this.app.serviceEnabled())

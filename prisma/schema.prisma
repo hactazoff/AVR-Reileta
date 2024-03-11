@@ -23,7 +23,7 @@ model User {
   home       String? // <id>@<address> (world)
   avatar     String? // <id>@<address> (avatar)
   follows    Follow[]
-  updated_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
   created_at DateTime  @default(now())
   worlds     World[]
 }
@@ -33,7 +33,7 @@ model Session {
   token      String   @unique
   user_id    String
   user       User     @relation(fields: [user_id], references: [id])
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 }
 
@@ -42,7 +42,7 @@ model Integrity {
   token      String   @unique
   user       String // <id>@<address> (user)
   expire_at  DateTime
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   create_at  DateTime @default(now())
 }
 
@@ -52,7 +52,7 @@ model Follow {
   from       User     @relation(fields: [from_id], references: [id])
   to_id      String
   is_out     Boolean // if true, from is internal user, is following other user
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 }
 
@@ -65,7 +65,7 @@ model World {
   tags        Tag[]
   owner_id    String
   owner       User         @relation(fields: [owner_id], references: [id])
-  updated_at  DateTime     @default(now())
+  updated_at  DateTime     @default(now()) @updatedAt
   created_at  DateTime     @default(now())
   assets      WorldAsset[]
 }
@@ -80,14 +80,14 @@ model WorldAsset {
   version    String
   hash       String?
   size       Int?
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 }
 
 model Tag {
   id         String   @id @unique @default(uuid())
   name       String   @unique
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 
   world       World?    @relation(fields: [world_id], references: [id])
@@ -106,7 +106,7 @@ model Server {
   secure     Boolean
   tags       Tag[]
   challenge  String?
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 }
 
@@ -117,6 +117,6 @@ model Instance {
   world      String
   owner      String
   tags       Tag[]
-  updated_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
   created_at DateTime @default(now())
 }

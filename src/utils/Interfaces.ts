@@ -43,7 +43,7 @@ export interface ResponseServerInfo {
     gateways: {
         http: string,
         ws: string,
-        proxy: string
+        // proxy: string
     }
     secure: boolean,
     version: string,
@@ -99,7 +99,7 @@ export interface ServerInfo {
     gateways: {
         http: URL,
         ws: URL,
-        proxy: URL
+        // proxy: URL
     },
     challenge?: string,
     secure: boolean,

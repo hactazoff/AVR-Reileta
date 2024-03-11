@@ -52,7 +52,7 @@ export class ServerManager {
             gateways: {
                 http: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress()),
                 ws: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress()),
-                proxy: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress())
+                // proxy: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress())
             },
             version: this.app.version,
             ready_at: this.app.ready_at,
@@ -74,7 +74,7 @@ export class ServerManager {
             gateways: {
                 http: infos.gateways.http.origin,
                 ws: infos.gateways.ws.origin,
-                proxy: infos.gateways.proxy.origin
+                // proxy: infos.gateways.proxy.origin
             },
             secure: infos.secure,
             version: this.app.version,
@@ -144,7 +144,7 @@ export class ServerManager {
             gateways: {
                 http: new URL(found.gateways.http),
                 ws: new URL(found.gateways.ws),
-                proxy: new URL(found.gateways.proxy)
+                // proxy: new URL(found.gateways.proxy)
             },
             secure: found.secure,
             version: found.version,

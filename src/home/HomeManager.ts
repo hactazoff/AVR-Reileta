@@ -31,6 +31,9 @@ export class HomeManager {
             else world = await this.app.worlds.getInternalWorld(obj?.id);
             if (world instanceof ErrorMessage)
                 world = await this.app.worlds.getFallbackWorld();
+            if (world instanceof ErrorMessage) return world;
+            console.log(world);
+            world.assets = world.assets.filter(e => !e.empty);
             return world;
         } catch (e) {
             console.warn(e);
