@@ -501,3 +501,69 @@ export async function createIntegrity(server) {
         return new Error(err.message);
     }
 }
+
+export async function getInstance(id, server) {
+    try {
+        const res = await fetch('/api/instances/' + id + (server ? '@' + server : ''), {
+            headers: {
+                ...(token ? { Authorization: token } : {})
+            }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:get_instance', data.data);
+        events.emit('avr:*', { event: 'get_instance', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:get_instance', err);
+        events.emit('avr:*', { event: 'get_instance', data: err });
+        return new Error(err.message);
+    }
+}
+
+export async function deleteInstance(id, server) {
+    try {
+        const res = await fetch('/api/instances/' + id + (server ? '@' + server : ''), {
+            method: 'DELETE',
+            headers: {
+                ...(token ? { Authorization: token } : {})
+            }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:delete_instance', data.data);
+        events.emit('avr:*', { event: 'delete_instance', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:delete_instance', err);
+        events.emit('avr:*', { event: 'delete_instance', data: err });
+        return new Error(err.message);
+    }
+}
+
+export async function getInstances(server) {
+    try {
+        const res = await fetch('/api/instances' + (server ? '@' + server : ''), {
+            headers: {
+                ...(token ? { Authorization: token } : {})
+            }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error.message);
+        events.emit('avr:get_instances', data.data);
+        events.emit('avr:*', { event: 'get_instances', data: data.data });
+        return data.data;
+    } catch (err) {
+        events.emit('avr:get_instances', err);
+        events.emit('avr:*', { event: 'get_instances', data: err });
+        return new Error(err.message);
+    }
+}
+
+export function getToken() {
+    return token;
+}
+
+export function setToken(newToken) {
+    token = newToken;
+}

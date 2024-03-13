@@ -85,7 +85,6 @@ export class AuthAPIWeb {
                 || request.get('Authorization') || request.cookies[CookieValue],
             session: undefined
         };
-        console.log(request.data);
         next();
     }
 }

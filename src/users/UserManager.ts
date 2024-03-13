@@ -36,17 +36,11 @@ export class UserManager {
                         display: "AVR Root User",
                         created_at: new Date(),
                         updated_at: new Date(),
-                        tags: {
-                            create: [
-                                { name: "avr:admin" },
-                                { name: "avr:bot" },
-                            ]
-                        }
-                    },
-                    include: { tags: true }
+                        tags: ["avr:admin", "avr:bot"].join(","),
+                    }
                 });
                 let session = await this.app.sessions.createSession({ id: root.id });
-                if (session instanceof ErrorMessage) 
+                if (session instanceof ErrorMessage)
                     return console.error(session);
                 console.log(`Root user created with id ${root.id} and session ${session.id}`);
             }
@@ -65,8 +59,7 @@ export class UserManager {
             if (typeof search !== "string")
                 return new ErrorMessage(ErrorCodes.UserInvalidInput);
             var u = await this.app.prisma.user.findFirst({
-                where: { OR: [{ id: search }, { name: search }] },
-                include: { tags: true }
+                where: { OR: [{ id: search }, { name: search }] }
             });
             return u ? {
                 id: u.id,
@@ -75,7 +68,7 @@ export class UserManager {
                 password: u.password || undefined,
                 thumbnail: u.thumbnail ? new URL(u.thumbnail, this.app.server.getInfo.gateways.http) : undefined,
                 banner: u.banner ? new URL(u.banner, this.app.server.getInfo.gateways.http) : undefined,
-                tags: u.tags.map(t => t.name),
+                tags: u.tags?.split(",") || [],
                 external: false,
                 server: getMyAdress(),
             } : new ErrorMessage(ErrorCodes.UserNotFound);
@@ -143,7 +136,6 @@ export class UserManager {
             ) return new ErrorMessage(ErrorCodes.UserDontHavePermission);
             await this.app.prisma.session.deleteMany({ where: { user_id: input.id } });
             await this.app.prisma.world.deleteMany({ where: { owner_id: input.id } });
-            await this.app.prisma.tag.deleteMany({ where: { user_id: input.id } });
             await this.app.prisma.user.deleteMany({ where: { id: input.id } })
         } catch (e) {
             console.warn(e);

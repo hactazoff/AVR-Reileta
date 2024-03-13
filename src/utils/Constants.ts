@@ -25,7 +25,8 @@ export const MatchTags = {
             for_admin: false,
             display: "Public",
             description: "Anyone can join",
-            overhide: []
+            overhide: [],
+            group: 1
         }, 
         "avr:permanent": {
             for_admin: true,
@@ -42,31 +43,36 @@ export const MatchTags = {
             for_admin: false,
             display: "Friends and friends of friends",
             description: "Friends of members can join",
-            overhide: ["avr:public"]
+            overhide: ["avr:public"],
+            group: 1
         },
         "avr:friends_only": {
             for_admin: false,
             display: "Friends only",
             description: "Only friends of owner and master can join",
-            overhide: ["avr:public", "avr:friends_plus"]
+            overhide: ["avr:public", "avr:friends_plus"],
+            group: 1
         },
         "avr:invite_plus": {
             for_admin: false,
             display: "Invite Plus",
             description: "Only invited users by members can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only"]
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only"],
+            group: 1
         },
         "avr:invite_only": {
             for_admin: false,
             display: "Invite only",
             description: "Only invited users by owner and master can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus"]
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus"],
+            group: 1
         },
         "avr:private": {
             for_admin: false,
             display: "Private",
             description: "Only owner can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus", "avr:invite_only"]
+            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus", "avr:invite_only"],
+            group: 1
         },
     }
 }
@@ -81,7 +87,7 @@ export const GenerateId = {
     Instance: () => `i_${randomUUID()}`,
 }
 
-export const TrustedDomzinRegex = [
+export const TrustedDomainRegex = [
     // raw.githubusercontent.com
     /^raw\.githubusercontent\.com$/,
     // *.hactazia.fr
@@ -360,5 +366,10 @@ export const ErrorCodes = {
         message: "Already following",
         code: 37,
         status: 409
+    },
+    TagNotFound: {
+        message: "Tag not found",
+        code: 38,
+        status: 403
     },
 };

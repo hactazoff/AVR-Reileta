@@ -54,6 +54,7 @@ export class Reileta extends EventEmitter {
         // Initialise l'application
         console.debug("Initialise l'application");
         this.express = Express();
+        
         this.express.use((q, s: any, n) => this.server.api_web.useBefore(q, s, n));
         this.http = HTTP.createServer(this.express);
         this.io = new SocketIO.Server(this.http, {
@@ -64,9 +65,11 @@ export class Reileta extends EventEmitter {
                 credentials: isSecure(),
             }
         });
+        
         // Ajoute les middleware
         console.debug("Ajout des middleware");
         this.server = new ServerManager(this);
+
         this.upload = mutler({
             storage: mutler.diskStorage({
                 destination: join(cwd(), "tmp"),

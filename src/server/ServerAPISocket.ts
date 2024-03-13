@@ -1,6 +1,7 @@
 import { Reileta } from "../Reileta";
 import { ServerManager } from "./ServerManager";
 import { PingRequest, PingResponse, SocketType } from "../utils/Interfaces";
+import { ErrorMessage } from "../utils/Security";
 
 export class ServerAPISocket {
     constructor(private readonly app: Reileta, private readonly manager: ServerManager) {
@@ -14,7 +15,19 @@ export class ServerAPISocket {
      * @param socket 
      */
     onConnection(socket: SocketType) {
-        socket.on('ping', (obj, callback) => this.onPing(socket, obj, callback));
+        socket.on('local', obj => {
+            try {
+                if (typeof obj != "object" || !obj.command) return;
+                switch (obj.command) {
+                    case 'avr/ping':
+                        socket.emit('avr/ping', {
+                            i: obj.data.i,
+                            o: Date.now()
+                        } as PingResponse, obj.state);
+                        break;
+                }
+            } catch (e) { }
+        });
     }
 
     /**
@@ -24,33 +37,29 @@ export class ServerAPISocket {
      */
     onPreConnection(socket: SocketType, next: (err?: any) => void) {
         socket.old_emit = socket.emit;
-        socket.data = {};
-        socket.onAny((event, ...args) => {
-            if (event !== 'ping' && args.every(ar => ar.command !== 'transform')) {
-                console.log(`Socket ${socket.id} received event ${event}.`);
-                console.dir(args, { depth: Infinity });
-            }
+        var ip = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+        socket.data = { ip: typeof ip === 'string' ? ip : ip[0] };
+        console.log(`${new Date().toISOString()} | ${process.env.HIDE_IP == 'true' ? '<hidden>' : socket.data.ip} > Socket ${socket.id} connected.`);
+        socket.on('local', (args) => {
+            if (!this.no_print.includes(args.command))
+                console.log(`${new Date().toISOString()} | ${process.env.HIDE_IP == 'true' ? '<hidden>' : socket.data.ip} > Socket ${socket.id} : received event ${args.command}.`);
         });
-        socket.emit = (event, ...args) => {
-            if (event !== 'ping' && args.every(ar => ar.command !== 'transform')) {
-                console.log(`Socket ${socket.id} emitted event ${event}.`);
-                console.dir(args, { depth: Infinity });
-            }
-            return socket.old_emit(event, ...args);
+        socket.emit = (command, data, state, room) => {
+            if (!this.no_print.includes(command))
+                console.log(`${new Date().toISOString()} | ${process.env.HIDE_IP == 'true' ? '<hidden>' : socket.data.ip} > Socket ${socket.id} : emitted event ${command}.`);
+            return socket.old_emit(room || 'local', {
+                command: command,
+                data: data instanceof ErrorMessage ? undefined : data,
+                error: data instanceof ErrorMessage ? data : undefined,
+                state: state
+            });
         }
+
+        socket.on('disconnect', () => {
+            console.log(`${new Date().toISOString()} | ${process.env.HIDE_IP == 'true' ? '<hidden>' : socket.data.ip} > Socket ${socket.id} disconnected.`);
+        });
         next();
     }
 
-    /**
-     * When a ping is received
-     * @param socket 
-     * @param obj 
-     * @param callback 
-     */
-    onPing(socket: SocketType, obj: PingRequest, callback: (obj: PingResponse) => void) {
-        socket.emit('ping', {
-            client: obj.time,
-            server: Date.now()
-        });
-    }
+    public no_print: string[] = ['avr/ping'];
 }

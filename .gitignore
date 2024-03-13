@@ -7,3 +7,4 @@ rsa/*
 files/*
 prisma/*.db*
 prisma/migrations
+grid.js

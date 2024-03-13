@@ -18,9 +18,10 @@ export class InstanceAPIWeb {
         // TODO: Instance API
         this.app.express.delete('/api/instances/:id', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
         this.app.express.post('/api/instances/:id', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
+        
         this.app.express.get('/api/instances/:id', (q, s: any) => this.getInstance(q, s));
         this.app.express.put('/api/instances', Express.json(), (q, s: any) => this.createInstance(q, s));
-        this.app.express.get('/api/instances', (q, s: any) => this.app.server.api_web.notImplemented(q, s));
+        this.app.express.get('/api/instances', (q, s: any) => this.getInstances(q, s));
     }
 
     async createInstance(req: ARequest, res: AResponse) {
@@ -58,6 +59,25 @@ export class InstanceAPIWeb {
             users: instance.users.map(u => this.app.users.objectToStrId(u) as string),
             connected: instance.sockets.length
         }
+        res.send({ data });
+    }
+
+    async getInstances(req: ARequest, res: AResponse) {
+        var instances = await this.manager.getInstances(req.data?.session?.user);
+        if (instances instanceof ErrorMessage)
+            return res.send({ error: instances });
+        var data: ResponseInstanceInfos[] = instances.map(instance => ({
+            id: instance.id,
+            name: instance.name,
+            capacity: instance.capacity,
+            world: this.app.worlds.objectToStrId(instance.world) as string,
+            owner: this.app.users.objectToStrId(instance.owner) as string,
+            master: instance.master ? this.app.users.objectToStrId(instance.master) : null,
+            server: instance.server,
+            tags: instance.tags,
+            users: instance.users.map(u => this.app.users.objectToStrId(u) as string),
+            connected: instance.sockets.length
+        }));
         res.send({ data });
     }
 }

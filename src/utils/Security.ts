@@ -195,7 +195,7 @@ export function checkUserInput(user: any): user is UserInput {
         && ((typeof user.username === "string" && MatchName.test(user.username)) || typeof user.username === "undefined")
         && ((typeof user.display === "string" && MatchDisplay.test(user.display)) || typeof user.display === "undefined")
         && ((typeof user.password === "string" && MatchPassword.test(user.password)) || typeof user.password === "undefined")
-        && ((Array.isArray(user.tags) && user.tags.every((t: any) => typeof t === "string")) || typeof user.tags === "undefined");
+        && ((Array.isArray(user.tags) && user.tags.every((t: any) => typeof t === "string" && !t.includes(','))) || typeof user.tags === "undefined");
     if (!i) return false;
     return true;
 }
@@ -248,7 +248,7 @@ export function checkWorldInput(world: any, id_optional = false): world is World
         && ((typeof world.title === "string" && world.title.length <= 64) || typeof world.title === "undefined")
         && ((typeof world.description === "string" && world.description.length <= 256) || typeof world.description === "undefined")
         && ((typeof world.capacity === "number" && world.capacity > 0 && world.capacity <= 128) || typeof world.capacity === "undefined")
-        && ((Array.isArray(world.tags) && world.tags.every((t: any) => typeof t === "string")) || typeof world.tags === "undefined");
+        && ((Array.isArray(world.tags) && world.tags.every((t: any) => typeof t === "string" && !t.includes(','))) || typeof world.tags === "undefined");
     if (!i) return false;
     return true;
 }
@@ -288,6 +288,7 @@ export function checkWorldResponse(world: any): world is WorldInfos {
         && typeof world.updated_at === "number"
         && (typeof world.thumbnail === "string" || typeof world.thumbnail === "undefined")
         && Array.isArray(world.tags)
+        && world.tags.every((t: any) => typeof t === "string" && !t.includes(','))
         && typeof world.external === "boolean"
         && typeof world.fallback === "boolean"
         && typeof world.assets === "object";
@@ -302,7 +303,7 @@ export function checkInstanceInput(input: any, who?: UserInfo): input is Instanc
         && ((typeof input.world === "string" && MatchID.World.test(input.world)) || typeof input.world === "undefined")
         && ((typeof input.capacity === "number" && input.capacity > 0 && input.capacity <= 128) || typeof input.capacity === "undefined")
         && ((typeof input.version === "string" && input.version.length <= 32) || typeof input.version === "undefined")
-        && ((Array.isArray(input.tags) && input.tags.every((t: any) => typeof t === "string")) || typeof input.tags === "undefined");
+        && ((Array.isArray(input.tags) && input.tags.every((t: any) => typeof t === "string" && !t.includes(','))) || typeof input.tags === "undefined");
     if (!i) return false;
     for (const tag of input.tags || [])
         if (tag in MatchTags.Instance) {

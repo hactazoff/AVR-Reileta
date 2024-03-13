@@ -1,5 +1,4 @@
-import { Session, Tag, User } from "@prisma/client";
-import e, { Request, Response } from "express";
+import { Request, Response } from "express";
 import { Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
@@ -130,16 +129,18 @@ export interface SocketType extends Socket<DefaultEventsMap, DefaultEventsMap, D
         session_id?: string;
         is_internal?: boolean;
         is_integrity?: boolean;
+        ip: string;
     }
+    emit: (command: string, data: any, state?: string, room?: string) => boolean;
 }
 
 export interface PingRequest {
-    time: number;
+    i: number;
 }
 
 export interface PingResponse {
-    client: number;
-    server: number;
+    i: number;
+    o: number;
 }
 
 export interface LoginInput {
@@ -335,9 +336,8 @@ export interface ResponseIntegrityInfo {
 }
 
 export interface RequestSocket<T> {
-    state: string | null;
+    state?: string;
     command: string;
-    subgroup: string | null;
     data: T
 }
 

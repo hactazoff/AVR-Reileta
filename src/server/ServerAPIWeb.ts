@@ -8,6 +8,7 @@ import { ErrorMessage } from "../utils/Security";
 export class ServerAPIWeb {
     constructor(private readonly app: Reileta, private readonly manager: ServerManager) {
         this.app.express.get('/api/server@:server', (q, s: any) => this.getExternalInfo(q, s));
+        this.app.express.get('/api/teapot', (q, s: any) => this.getTeapot(q, s));
 
         // TODO: Server API
         this.app.express.get('/api/server', (q, s: any) => this.getInfo(s));
@@ -46,6 +47,15 @@ export class ServerAPIWeb {
     }
 
     /**
+     * Get the teapot
+     * @param request 
+     * @param response 
+     */
+    getTeapot(request: ARequest, response: AResponse) {
+        response.status(418).send({ data: "I'm a teapot" });
+    }
+
+    /**
      * Middleware for the parsing of the requests
      * @param request 
      * @param response 
@@ -54,7 +64,7 @@ export class ServerAPIWeb {
      */
     useBefore(request: ARequest, response: AResponse, next: NextFunction) {
         let ip = request.headers['cf-connecting-ip'] || request.headers['x-forwarded-for'] || request.connection.remoteAddress;
-        console.log(new Date().toISOString(), '|', ip, '>', request.method.toUpperCase(), request.url);
+        console.log(new Date().toISOString(), '|', process.env.HIDE_IP == 'true' ? '<hidden>' : ip, '>', request.method.toUpperCase(), request.url);
         response.oldSend = response.send;
         response.send = (obj: any) => this.responseSender(request, response, next, obj);
         if (!this.app.serviceEnabled())

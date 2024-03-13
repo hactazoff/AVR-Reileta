@@ -8,15 +8,18 @@ import {
     getWorld, uploadWorld, deleteWorld, createWorld,
     createWorldAsset,
     uploadWorldAssetFile,
-    createInstance,
-    createIntegrity
+    getInstances, createInstance, getInstance,
+    createIntegrity,
+    getToken, setToken
+
 } from "./api.js";
 
 events.on('avr:*', (ev) => {
     const ez = document.getElementById("avr_" + ev.event);
     console.log(ez, ev.event, ev.data, ev.data.message)
     ez.querySelector(`#avr_${ev.event} .source`).innerHTML = (ev.data instanceof Error ? ev.data.message : JSON.stringify(ev.data, null, 4))
-        .replaceAll('\n', '<br>').replaceAll(' ', '&nbsp;')
+        .replaceAll('\n', '<br>').replaceAll(' ', '&nbsp;');
+    document.getElementById("avr_token").value = getToken();
 });
 
 window.addEventListener('load', async function () {
@@ -191,4 +194,34 @@ window.addEventListener('load', async function () {
         node_create_integrity.querySelector(".source").innerHTML = "Loading...";
         createIntegrity(e.target.server.value);
     });
+
+    const node_get_instance = document.getElementById("avr_get_instance");
+    node_get_instance.querySelector("form").addEventListener('submit', function (e) {
+        e.preventDefault();
+        node_get_instance.querySelector(".source").innerHTML = "Loading...";
+        getInstance(
+            e.target.id.value,
+            e.target.server.value || undefined
+        );
+    });
+
+    const node_get_instances = document.getElementById("avr_get_instances");
+    node_get_instances.querySelector("form").addEventListener('submit', function (e) {
+        e.preventDefault();
+        node_get_instances.querySelector(".source").innerHTML = "Loading...";
+        getInstances(
+            e.target.server.value || undefined
+        );
+    });
+
+    /**
+     * @type {HTMLInputElement}
+     */
+    const node_token = document.getElementById("avr_token");
+    node_token.value = getToken();
+    node_token.addEventListener('change', function (e) {
+        setToken(e.target.value);
+    });
+
+
 });

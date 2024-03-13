@@ -1,6 +1,6 @@
 import { randomBytes, randomFill } from "node:crypto";
 import { Reileta } from "../Reileta";
-import { ErrorCodes, GenerateId, getMyAdress } from "../utils/Constants";
+import { ErrorCodes, GenerateId, MatchTags, getMyAdress } from "../utils/Constants";
 import { InstanceInfos, InstanceInput, UserInfo, UserInstanceInfos, WorldInfos } from "../utils/Interfaces";
 import { ErrorMessage, checkInstanceInput, checkUserInput } from "../utils/Security";
 import { InstanceAPIWeb } from "./InstanceAPIWeb";
@@ -17,6 +17,18 @@ export class InstanceManager {
         this.api_socket = new InstanceAPISocket(this.app, this);
     }
 
+    
+    objectToStrId(obj?: { id: string, server?: string }) {
+        if (!obj) return null;
+        return `${obj.id}${obj.server ? "@" + obj.server : ""}`;
+    }
+
+    strToObject(str?: string): { id: string, server?: string } | null {
+        if (!str) return null;
+        const spl = str.split("@");
+        return { id: spl[0], server: spl[1] };
+    }
+
     /**
      * Get instance from id
      * @param id 
@@ -27,9 +39,8 @@ export class InstanceManager {
         try {
             if (!id || typeof id !== 'string')
                 return new ErrorMessage(ErrorCodes.InstanceInvalidInput);
-            const instance = await this.app.prisma.instance.findUnique({
-                where: { id },
-                include: { tags: true }
+            const instance = await this.app.prisma.instance.findFirst({
+                where: { OR: [{ id }, { name: id }] }
             });
             if (!instance)
                 return new ErrorMessage(ErrorCodes.InstanceNotFound);
@@ -93,7 +104,7 @@ export class InstanceManager {
                 server: getMyAdress(),
                 created_at: instance.created_at,
                 updated_at: instance.updated_at,
-                tags: instance.tags.map(e => e.name),
+                tags: instance.tags?.split(",") || [],
                 users: users,
                 sockets: sockets ? Array.from(sockets) : [],
             };
@@ -112,9 +123,40 @@ export class InstanceManager {
         try {
             if (!who)
                 return new ErrorMessage(ErrorCodes.UserNotLogged);
-            if (!input || !checkInstanceInput(input, who) || !input.world)
+            if (!input || !checkInstanceInput(input, who) || !input.world || !input.tags)
                 return new ErrorMessage(ErrorCodes.InstanceInvalidInput);
-            // get world from input
+            for (const tag of input.tags)
+                if (!(MatchTags.Instance as any)[tag])
+                    return new ErrorMessage(ErrorCodes.TagNotFound);
+            var changed = false;
+            var groups = new Set<number>();
+            for (const t of input.tags) {
+                var tag = (MatchTags.Instance as any)[t] as { for_admin: boolean, overhide: string[], group: number };
+                if (tag.group)
+                    groups.add(tag.group);
+            }
+            for (const mtag of Object.keys(MatchTags.Instance)) {
+                var tag = (MatchTags.Instance as any)[mtag] as { for_admin: boolean, overhide: string[], group: number };
+                if (tag.group && !groups.has(tag.group))
+                    input.tags.push(mtag);
+            }
+            do {
+                changed = false;
+                for (const t of input.tags) {
+                    var ta = t as string;
+                    var tags = (MatchTags.Instance as any)[t] as { for_admin: boolean, overhide: string[] };
+                    if (tags && tags.for_admin && !who.tags.includes("avr:admin")) {
+                        input.tags = input.tags.filter(e => e !== ta);
+                        changed = true;
+                    }
+                    if (tags.overhide)
+                        for (const overhide of tags.overhide)
+                            if (input.tags.includes(overhide)) {
+                                input.tags = input.tags.filter(e => e !== overhide);
+                                changed = true;
+                            }
+                }
+            } while (changed);
             const worldobj = this.app.worlds.strIdToObject(input.world);
             if (!worldobj)
                 return new ErrorMessage(ErrorCodes.WorldNotFound);
@@ -137,21 +179,20 @@ export class InstanceManager {
                 return new ErrorMessage(ErrorCodes.UserNotFound);
             if (!str_world)
                 return new ErrorMessage(ErrorCodes.WorldNotFound);
-            // create instance
+            input.name ??= randomBytes(3).toString("hex");
+            input.capacity ??= world.capacity;
+            input.id ??= GenerateId.Instance();
             const instance = await this.app.prisma.instance.create({
                 data: {
-                    id: input.id || GenerateId.Instance(),
-                    name: input.name || randomBytes(3).toString("hex"),
-                    capacity: input.capacity || world.capacity,
+                    id: input.id,
+                    name: input.name,
+                    capacity: input.capacity,
                     world: str_world,
                     owner: str_owner,
-                    tags: { create: input.tags ? input.tags.map(e => ({ name: e })) : [] },
+                    tags: input.tags.join(","),
                 },
-                include: { tags: true }
             });
-
             const sockets = this.app.io.sockets.adapter.rooms.get('instance:' + instance.id);
-
             return {
                 id: instance.id,
                 name: instance.name,
@@ -162,15 +203,55 @@ export class InstanceManager {
                 server: getMyAdress(),
                 created_at: instance.created_at,
                 updated_at: instance.updated_at,
-                tags: instance.tags.map(e => e.name),
+                tags: instance.tags?.split(",") || [],
                 users: [],
                 sockets: sockets ? Array.from(sockets) : [],
             };
-
-
         } catch (e) {
             console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }
+
+    async deleteInstance(id: string, who?: UserInfo): Promise<boolean | ErrorMessage> {
+        try {
+            if (!id || typeof id !== 'string')
+                return new ErrorMessage(ErrorCodes.InstanceInvalidInput);
+            const instance = await this.app.prisma.instance.findUnique({ where: { id } });
+            if (!instance)
+                return new ErrorMessage(ErrorCodes.InstanceNotFound);
+            if (instance.owner !== this.app.users.objectToStrId(who)
+                && !who?.tags.includes("avr:admin"))
+                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+            await this.app.prisma.instance.delete({ where: { id } });
+            return true;
+        } catch (e) {
+            console.warn(e);
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
+
+    async getInstances(who?: UserInfo): Promise<InstanceInfos[] | ErrorMessage> {
+        try {
+            const instances = await this.app.prisma.instance.findMany({});
+            let result: InstanceInfos[] = [];
+            for (const instance of instances) {
+                const data = await this.getInstance(instance.id, who);
+                if (data instanceof ErrorMessage)
+                    continue;
+                result.push(data);
+            }
+            return result;
+        } catch (e) {
+            console.warn(e);
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
+}
+
+export enum QuitType {
+    Kicked = 0,
+    Banned = 2,
+    Closed = 3,
+    Disconnected = 4
 }

@@ -2,7 +2,9 @@
 # Reil[ins]eta
 
 Reileta is a system for the management for AtelierVR.
+
 ## Table of Contents
+
 - [Reil\[ins\]eta](#reilinseta)
   - [Table of Contents](#table-of-contents)
   - [Eta (Registry Server)](#eta-registry-server)
@@ -42,7 +44,7 @@ On Request HTTP, it can add `AVR-Gateway: {secure bool} {address string}` header
 
 ## Ins (Instance Servers)
 
->The Ins are the instance servers of the system. 
+>The Ins are the instance servers of the system.
 They can be created by the users, services or decicated servers.
 They communicate with socket connections to the Reil and Eta servers.
 The others clients can connect to the Ins servers with the Reil server.
@@ -55,6 +57,7 @@ The following table shows the available requests.
 All requests if you get a external server, you have to use the `?server` query parameter.
 
 A sample response looks like this:
+
 ```ts
 {
     "request": REQUEST_URL,
@@ -70,6 +73,7 @@ A sample response looks like this:
     } | undefined
 }
 ```
+
 - `REQUEST_URL` is the url of the request.
 - `DATA_OBJECT` is the real response data of the request.
 - `TIMESTAMP_IN_MILLISECONDS` is the timestamp of the request.
@@ -83,7 +87,6 @@ A sample response looks like this:
 - [GET /api/server](#get-api-server) - Get the server information
 - [POST /api/server](#post-api-server) - Update the server information
 - [GET /api/time](#get-api-time) - Get the server time
-
 
 ### Authentication
 
@@ -104,15 +107,21 @@ The `:server` parameter is optional and only needed if you want to get the infor
 - [GET /api/users/:id](#get-apiusersid) - Get a user information
 - [POST /api/users/:id](#post-apiusersid) - Update a user information
 - [DELETE /api/users/:id](#delete-apiusersid) - Delete a user
-    #### Home
+
+#### Home
+
 - [GET /api/users/:id/home](#get-apiusersidhome) - Get the user home
 - [POST /api/users/:id/home](#post-apiusersidhome) - Update the user home
 - [DELETE /api/users/:id/home](#delete-apiusersidhome) - Delete the user home
-    #### Thumbnail
+
+#### Thumbnail
+
 - [GET /api/users/:id/thumbnail](#get-apiusersidthumbnail) - Get the user thumbnail png
 - [POST /api/users/:id/thumbnail](#post-apiusersidthumbnail) - Upload a new user thumbnail png
 - [DELETE /api/users/:id/thumbnail](#delete-apiusersidthumbnail) - Delete the user thumbnail png
-    #### Banner
+
+#### Banner
+
 - [GET /api/users/:id/banner](#get-apiusersidbanner) - Get the user banner png
 - [POST /api/users/:id/banner](#post-apiusersidbanner) - Upload a new user banner png
 - [DELETE /api/users/:id/banner](#delete-apiusersidbanner) - Delete the user banner png
@@ -135,19 +144,25 @@ Is must be a unique id for alls services of the global system.
 - [GET /api/worlds/:id](#get-apiworldsid) - Get a world information
 - [POST /api/worlds/:id](#post-apiworldsid) - Update a world information
 - [DELETE /api/worlds/:id](#delete-apiworldsid) - Delete a world
-    #### Thumbnail
+
+#### Thumbnail
+
 - [GET /api/worlds/:id/thumbnail](#get-apiworldsidthumbnail) - Get the world thumbnail png
 - [POST /api/worlds/:id/thumbnail](#post-apiworldsidthumbnail) - Upload a new world thumbnail png
 - [DELETE /api/worlds/:id/thumbnail](#delete-apiworldsidthumbnail) - Delete the world thumbnail png
-    #### Assets
+
+#### Assets
+
 - [GET /api/worlds/:id/assets](#get-apiworldsidassets) - Get all assets
 - [PUT /api/worlds/:id/assets](#put-apiworldsidassets) - Create a new asset
 - [GET /api/worlds/:id/assets/:asset](#get-apiworldsidassetsasset) - Get a asset information
 - [POST /api/worlds/:id/assets/:asset](#post-apiworldsidassetsasset) - Update a asset information
 - [DELETE /api/worlds/:id/assets/:asset](#delete-apiworldsidassetsasset) - Delete a asset
-    #### Asset File
+
+#### Asset File
+
 - [GET /api/worlds/:id/assets/:asset/file](#get-apiworldsidassetsassetfile) - Get the asset file
-- [POST /api/worlds/:id/assets/:asset/file](#post-apiworldsidassetsassetfile) - Upload a new asset file 
+- [POST /api/worlds/:id/assets/:asset/file](#post-apiworldsidassetsassetfile) - Upload a new asset file
 
 ### Challenges
 
@@ -178,7 +193,7 @@ It can Authenticate itself with the following requests with the `Authorization` 
 - [GET /api/instances/:id](#get-apiinstancesid) - Get a instance information
 - [POST /api/instances/:id](#post-apiinstancesid) - Update a instance information
 - [DELETE /api/instances/:id](#delete-apiinstancesid) - Delete a instance
-- [GET /api/instances/:id/queue](#get-apiinstancesidqueue) - Get the queue of the instance
+- [GET /api/instances/:id/candidate](#get-apiinstancesidcandidate) - Get the candidate of the instance
 - [POST /api/instances/:id/candidate](#post-apiinstancesidcandidate) - Add a candidate to join the instance
 - [DELETE /api/instances/:id/candidate](#delete-apiinstancesidcandidate) - Remove a candidate to join the instance
 
@@ -192,26 +207,25 @@ The WebSocket is used to send and receive data from your server.
 ### Requests
 
 Sample request:
+
 ```ts
 {
-    "state": REQUEST_STATE,
+    "state"?: REQUEST_STATE,
     "command": REQUEST_EVENT,
-    "subgroup": REQUEST_SUBGROUP,
     "data": DATA_OBJECT | undefined,
 }
 ```
 
 - `REQUEST_STATE` is the state custom state of the request.
-- `REQUEST_EVENT` is the event of the request.
-- `REQUEST_SUBGROUP` is the subgroup of the request.
+- `REQUEST_EVENT` is the event of the request. Is represented by a path, for example `avr/instance:join`.
 - `DATA_OBJECT` is the data of the request.
 
 Sample response:
+
 ```ts
 {
-    "state": RESPONSE_STATE,
+    "state"?: RESPONSE_STATE,
     "command": RESPONSE_EVENT,
-    "subgroup": RESPONSE_SUBGROUP,
     "data": DATA_OBJECT | undefined,
     "error": {
         "code": ERROR_CODE,
@@ -222,7 +236,6 @@ Sample response:
 
 - `RESPONSE_STATE` is the state custom state of the response.
 - `RESPONSE_EVENT` is the event of the response.
-- `RESPONSE_SUBGROUP` is the subgroup of the response.
 - `DATA_OBJECT` is the data of the response.
 - `ERROR_CODE` is the error code of the response.
 - `ERROR_MESSAGE` is the error message of the response.
@@ -239,81 +252,84 @@ Sample response:
 
 #### Instances
 
-- [instance-join](#ws-join) - Join a instance
-- [instance-leave](#ws-leave) - Leave a instance
+- [instance-enter](#ws-join) - Join a instance
+- [instance-quit](#ws-leave) - Leave a instance
 
 ### Events
 
-- [all](#ws-all) - All events
-- [ping](#ws-ping) - Pong of the server
-- [authentication](#ws-authentication) - All authentication events
-- [authenticated](#ws-authenticated) - You are authenticated
-- [unauthenticated](#ws-unauthenticated) - You are unauthenticated
-- [subscribed](#ws-subscribed) - You are subscribed to a event
-- [unsubscribed](#ws-unsubscribed) - You are unsubscribed to a event
+- [avr/ping](#ws-ping) - Pong of the server
+    > The event is't send in logs.
+    ```ts
+    {
+        "i": number, // Initial timestamp by the client
+        "o": number // Timestamp by the server
+    }
+    ```
+- [avr/authenticate](#ws-authentication) - All authentication events
+    ```ts
+    {
+        "internal": boolean, // If use token or not
+        "user": {
+            "id": string,
+            "username": string,
+            "display": string,
+            "server": string
+        }
+    }
+    ```
 - [update-user](#ws-update-user-me) - The users is updated
 - [update](#ws-update) - All update events
 - [update-server](#ws-update-server) - The server is updated
 - [update-world](#ws-update-world) - The world is updated
 - [update-service](#ws-update-service) - The service is updated
 - [update-instance](#ws-update-instance) - The instances is updated
-- [instance](#ws-instance) - All instance events
-- [instance-joined](#ws-instance-joined) - A user joined a instance
-- [instance-data](#ws-instance-data) - A user send data in the instance
-- [instance-left](#ws-instance-left) - A user left a instance
+- [avr/instance:join](#ws-instance-join) - A user joined a instance
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "user": string // The user id@server
+    }
+    ```
+- [avr/instance:left](#ws-instance-left) - A user left a instance
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "code": number // The code of the leave
+    }
+    ```
+- [avr/instance:enter](#ws-instance-enter) - The current user entered a instance
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "user": string, // The user id@server
+    }
+    ```
+- [avr/instance:quit](#ws-instance-leave) - The current user left a instance
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "code": Instance.QuitType // The code of the leave
+        "message": string // The message of the leave
+    }
+    ```
+- [avr/instance:data](#ws-instance-data) - A user send data in the instance
+    > The event is't send in logs.
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "data": any // The data of the user
+    }
+    ```
+- [avr/instance:transform](#ws-instance-transform) - A user transform in the instance
+    > The event is't send in logs.
+    ```ts
+    {
+        "socket": string, // The socket id of the user
+        "path": string, // The path of the transform
+        "position": Transform.Position,
+        "rotation": Transform.Rotation,
+        "scale": Transform.Scale
+    }
+    ```
 - [instance-candidate](#ws-instance-candidate) - A user is a candidate to join or cancel the instance
 - [instance-queue](#ws-instance-queue) - The queue of the instance is updated
-
-## Objects
-
-### Server
-
-```ts
-type ServerAt = string;
-
-interface Server {
-    id: string;
-    title: string;
-    description: string | undefined;
-    address: string;
-    secure: boolean;
-    version: string;
-    created_at: number;
-    updated_at: number;
-    ready_at: number | undefined;
-}
-```
-
-### User
-
-```ts
-type UserID = `u_${string}`;
-type UserIDAt = `${UserID}@${ServerAt}`;
-type UserStatus = "online" | "offline" | "away" | "busy";
-
-interface User {
-    id: UserID;
-    username: string;
-    description: string | undefined;
-    displayname: string;
-    thumbnail: string | undefined;
-    banner: string | undefined;
-    created_at: number;
-    updated_at: number;
-}
-
-interface UserMe extends User {
-    email: string;
-    status: UserStatus;
-    following: UserIDAt[];
-    home: string | undefined;
-}
-
-interface UserFriend extends User {
-    isFriend: true;
-    following_at: number;
-    status: UserStatus;
-}
-```
-
-### World

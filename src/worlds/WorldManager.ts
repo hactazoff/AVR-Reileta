@@ -1,6 +1,6 @@
 import { Reileta } from "../Reileta";
 import { WorldAPIWeb } from "./WorldAPIWeb";
-import { Tag, World, WorldAsset } from "@prisma/client";
+import { World, WorldAsset } from "@prisma/client";
 import { ErrorCodes, GenerateId, getCanEditWorld, getFallbackWorld, getFilePath, getMyAdress, getSoftHideWorlds, getSupportedWorldAssetEngine, getSupportedWorldAssetPlatforms } from "../utils/Constants";
 import { ErrorMessage, checkUserTags, checkValidityWorldAsset, checkWorldAssetInput, checkWorldInput, checkWorldResponse, checkWorldSearchInput, hashFile, isURL } from "../utils/Security";
 import { UserInfo, WorldAssetInfos, WorldAssetInput, WorldInfos, WorldSearchInput } from "../utils/Interfaces";
@@ -43,7 +43,7 @@ export class WorldManager {
                     description: input.description,
                     capacity: input.capacity || 10,
                     owner_id: who.id,
-                    tags: { connect: input.tags?.map(t => ({ name: t })) }
+                    tags: input.tags?.join(",") || null
                 }
             });
 
@@ -117,7 +117,7 @@ export class WorldManager {
 
             const world = await this.app.prisma.world.findFirst({
                 where: { id },
-                include: { tags: true, assets: true }
+                include: { assets: true }
             });
             if (!world)
                 return new ErrorMessage(ErrorCodes.WorldNotFound);
@@ -127,7 +127,7 @@ export class WorldManager {
                 title: world.title,
                 description: world.description || undefined,
                 capacity: world.capacity,
-                tags: world.tags.map(t => t.name),
+                tags: world.tags?.split(",") || [],
                 owner_id: world.owner_id,
                 server: getMyAdress(),
                 created_at: world.created_at,
@@ -181,7 +181,7 @@ export class WorldManager {
                     title: input.title,
                     description: input.description,
                     capacity: input.capacity,
-                    tags: { set: input.tags?.map(t => ({ name: t })) }
+                    tags: input.tags?.join(",") || null
                 }
             });
             return await this.getInternalWorld(id, who);
