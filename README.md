@@ -30,6 +30,59 @@ Reileta is a system for the management for AtelierVR.
     - [User](#user-1)
     - [World](#world)
 
+## How to install
+
+1) Clone the repository
+```sh
+git clone https://github.com/hactazoff/AVR-Reileta.git
+cd AVR-Reileta/
+```
+
+2) Install the dependencies
+```sh
+npm install
+```
+
+3) Create a .env file and fill it with the .env.example file
+```sh
+cp .env.example .env
+```
+
+4) Start the server
+```sh
+npm run dev
+```
+
+## Environment Parameters
+
+- `DATABASE_URL=string path` - The database url
+- `REILETA_ID=string` - The id of the server
+- `REILETA_ENABLE=boolean` - If the server is enabled
+- `REILETA_PORT=number` - The port of the server
+- `REILETA_PREFERED_ADDRESS=string` - The prefered address of the server
+- `REILETA_SECURE=boolean` - If the server is secure
+- `REILETA_AUTH_CAN_LOGIN=boolean` - If you can login
+- `REILETA_AUTH_CAN_REGISTER=boolean` - If you can register
+- `REILETA_AUTH_CAN_DELETE=boolean` - If you can delete your account
+- `REILETA_INTEGRITY_CAN_CREATE=boolean` - If you can create integrity
+- `REILETA_INTEGRITY_CAN_CHECK=boolean` - If you can check integrity
+- `REILETA_SOFT_HIDE_WORLDS=boolean` - If you can view all worlds
+- `REILETA_WORLD_CAN_MODIFY=boolean` - If you can modify worlds
+- `REILETA_WORLD_FALLBACK=string` - The fallback world id
+- `REILETA_TMP_FILE_EXPIRATION=number` - The expiration of the temporary files
+- `REILETA_DEFAULT_USER_TAGS=string` - The default user tags (comma separated)
+- `REILETA_CAN_EDIT_WORLD=boolean` - If you can edit worlds
+- `REILETA_SUPPORTED_WORLD_ASSET_ENGINE=string` - The supported world asset engines (comma separated)
+- `REILETA_SUPPORTED_WORLD_ASSET_PLATFORMS=string` - The supported world asset platforms (comma separated)
+- `REILETA_INTEGRITY_EXPIRATION=number` - The expiration of the integrity
+- `HIDE_IP=boolean` - If you can hide the ip
+' `REILETA_CAN_UPLOAD_FILE=boolean` - If you can upload files
+- `REILETA_FILE_PATH=string` - The file origin path
+
+
+
+
+
 ## Eta (Registry Server)
 
 >The Eta is the main server of the system.
