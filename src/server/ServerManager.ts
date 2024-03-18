@@ -2,9 +2,10 @@ import { Reileta } from "../Reileta";
 import { ResponseBase, ResponseServerInfo, ServerInfo, UserInfo } from "../utils/Interfaces";
 import { ServerAPIWeb } from "./ServerAPIWeb";
 import { ServerAPISocket } from "./ServerAPISocket";
-import { ErrorCodes, GenerateId, getDescription, getIcon, getMyAdress, getName, isSecure } from "../utils/Constants";
+import { ErrorCodes, GenerateId } from "../utils/Constants";
 import { ErrorMessage, checkBaseResponse, checkServerResponse, checkUserTags } from "../utils/Security";
-import { get } from "http";
+import User from "../users/User";
+import { request } from "undici";
 export class ServerManager {
 
     api_web: ServerAPIWeb;
@@ -14,7 +15,6 @@ export class ServerManager {
         this.api_web = new ServerAPIWeb(this.app, this);
         this.api_socket = new ServerAPISocket(this.app, this);
     }
-
 
     /**
      * Cache of the servers discovered
@@ -42,17 +42,16 @@ export class ServerManager {
     /**
      * Get the server info
      */
-    get getInfo(): ServerInfo {
+    getInfos(): ServerInfo {
         return {
             id: this.app.id,
             title: getName(),
             description: getDescription(),
-            address: getMyAdress(),
+            address: getPreferedAddress(),
             secure: isSecure(),
             gateways: {
-                http: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress()),
-                ws: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress()),
-                // proxy: new URL(`http${isSecure() ? 's' : ''}://` + getMyAdress())
+                http: new URL(`http${isSecure() ? 's' : ''}://` + getPreferedAddress()),
+                ws: new URL(`http${isSecure() ? 's' : ''}://` + getPreferedAddress())
             },
             version: this.app.version,
             ready_at: this.app.ready_at,
@@ -61,26 +60,13 @@ export class ServerManager {
         }
     }
 
-    /**
-     * Get the server info parsed for the client
-     */
-    get getParsedInfo(): ResponseServerInfo {
-        const infos = this.getInfo;
-        return {
-            id: this.app.id,
-            title: infos.title || infos.id,
-            description: infos.description,
-            address: infos.address,
-            gateways: {
-                http: infos.gateways.http.origin,
-                ws: infos.gateways.ws.origin,
-                // proxy: infos.gateways.proxy.origin
-            },
-            secure: infos.secure,
-            version: this.app.version,
-            ready_at: this.app.ready_at.getTime(),
-            icon: infos.icon.href
-        }
+
+    async getExInfos(server: string, who?: User | "bypass"): Promise<ServerInfo | ErrorMessage> {
+        if (who && who !== "bypass" && !who.canFetch)
+            return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+        const serverInfo = await this.getServer(server);
+        if (!serverInfo) return new ErrorMessage(ErrorCodes.ServerNotFound);
+        return serverInfo;
     }
 
     /**
@@ -98,9 +84,11 @@ export class ServerManager {
      * @param server address of the server
      * @returns 
      */
-    async getServer(server: string): Promise<ServerInfo | null> {
+    private async getServer(server: string): Promise<ServerInfo | null> {
         try {
-            server = new URL(server).host;
+            var u = new URL(server).host;
+            if (!u) throw new Error();
+            server = u;
         } catch {
             try {
                 server = new URL("h://" + server).host;
@@ -108,31 +96,24 @@ export class ServerManager {
                 return null;
             }
         }
-
-        // If the server is in the cache, return the cached server info
         let cached: ServerInfo | null = this.findCacheServer(server);
-
-        if (cached && cached.address === getMyAdress())
-            return this.getInfo;
-
+        if (cached && isOwnServerAddress(cached.address))
+            return this.getInfos();
         if (cached)
             return cached;
-
         let found: ResponseServerInfo | null = null;
-
         for (const secure of ['s', ''])
             try {
                 const url = new URL(`http${secure}://${server}/api/server`);
-                const res = await fetch(url.href, { method: "GET" });
-                if (!res.ok)
+                const res = await request(url.href, { method: "GET" });
+                if (res.statusCode !== 200)
                     continue;
-                const body = (await res.json() as any);
+                const body = (await res.body.json() as any);
                 if (!body || !body.data || body.error || !checkServerResponse(body.data))
                     continue;
                 found = body.data;
                 break;
             } catch { }
-
         if (!found)
             return null;
 
@@ -143,8 +124,7 @@ export class ServerManager {
             address: found.address,
             gateways: {
                 http: new URL(found.gateways.http),
-                ws: new URL(found.gateways.ws),
-                // proxy: new URL(found.gateways.proxy)
+                ws: new URL(found.gateways.ws)
             },
             secure: found.secure,
             version: found.version,
@@ -191,7 +171,7 @@ export class ServerManager {
                 return new ErrorMessage(ErrorCodes.UserNotLogged);
             if (!address || typeof address !== "string")
                 return new ErrorMessage(ErrorCodes.ServerInvalidInput);
-            if (address === getMyAdress() || (!checkUserTags(who, ["avr:fetch_external"]) && !checkUserTags(who, ['avr:admin'])))
+            if (address === getPreferedAddress() || (!checkUserTags(who, ["avr:fetch_external"]) && !checkUserTags(who, ['avr:admin'])))
                 return new ErrorMessage(ErrorCodes.UserDontHavePermission);
             const server = await this.app.server.getServer(address);
             if (!server)
@@ -227,14 +207,14 @@ export class ServerManager {
             const res = await fetch(url.toString(), {
                 method: options.method || "GET",
                 headers: {
-                    'user-agent': `AVR/${this.app.version}(Server; ${getMyAdress()})`,
+                    'user-agent': `AVR/${this.app.version}(Server; ${getPreferedAddress()})`,
                     'authorization': cached.challenge || 'undefined',
                     ...(options.headers || {}),
                 },
                 body: options.body || undefined
             });
 
-            
+
 
             let body = await res.json();
 
@@ -310,4 +290,43 @@ export class ServerManager {
     async fetchChallenge(address: string): Promise<ErrorMessage | null> {
         return null;
     }
+}
+
+export function getPreferedAddress(): string {
+    return process.env.REILETA_PREFERED_ADDRESS || '127.0.0.1:' + getPort();
+}
+
+export function getPort(): number {
+    return Number(process.env.REILETA_PORT) || 3032;
+}
+
+export function getName() {
+    return process.env.REILETA_TITLE || "Default Reileta Server";
+};
+
+export function getDescription() {
+    return process.env.REILETA_DESCRIPTION || "A server AtelierVR";
+}
+
+export function getIcon() {
+    return new URL(process.env.REILETA_ICON || `http${isSecure() ? 's' : ''}://${getPreferedAddress()}/icon.png`);
+}
+
+export function isSecure() {
+    return process.env.REILETA_SECURE === 'true';
+}
+
+/**
+ * @param address address ip or domain name
+ * @returns 
+ */
+export function isOwnServerAddress(address: string): boolean {
+    if (address === getPreferedAddress())
+        return true;
+    return [ // check if the address is a local address
+        // /^(https?:\/\/)?(localhost|lvh\.me|::1?|fe80::1|((::f{4}:)?(1(0|27)\.\d{1,3}|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}))(:\d{1,5})?/g,
+        /127\.\d+\.\d+\.\d+/,
+        /0\.\d+\.\d+\.\d+/,
+        // /::/
+    ].some(reg => reg.test(address));
 }

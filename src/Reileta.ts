@@ -5,7 +5,7 @@ import SocketIO from "socket.io";
 import HTTP from 'http';
 import cookieParser from 'cookie-parser';
 import { PluginManager } from "./plugins/PluginManager";
-import { ServerManager } from "./server/ServerManager";
+import { ServerManager, getPort } from "./server/ServerManager";
 import { UserManager } from "./users/UserManager";
 import { SessionManager } from "./sessions/SessionManager";
 import { AuthManager } from "./auth/AuthManager";
@@ -14,11 +14,13 @@ import { join } from "path";
 import { WorldManager } from "./worlds/WorldManager";
 import mutler from "multer";
 import { readdirSync, statSync, unlinkSync } from "node:fs";
-import { getMyAdress, getName, getPort, getTmpFileExpiration, isSecure } from "./utils/Constants";
+import { getTmpFileExpiration } from "./utils/Constants";
 import { HomeManager } from "./home/HomeManager";
 import { InstanceManager } from "./instance/InstanceManager";
 import { IntegrityManager } from "./integrity/IntegrityManager";
 import { FollowManager } from "./followers/FollowManager";
+import CacheManager from "./cache/CacheManager";
+import { PlayerManager } from "./players/PlayerManager";
 
 export class Reileta extends EventEmitter {
 
@@ -43,6 +45,8 @@ export class Reileta extends EventEmitter {
     instances: InstanceManager;
     integrity: IntegrityManager;
     follows: FollowManager;
+    cache: CacheManager;
+    players: PlayerManager;
 
     constructor() {
         super();
@@ -54,18 +58,17 @@ export class Reileta extends EventEmitter {
         // Initialise l'application
         console.debug("Initialise l'application");
         this.express = Express();
-        
+
         this.express.use((q, s: any, n) => this.server.api_web.useBefore(q, s, n));
         this.http = HTTP.createServer(this.express);
         this.io = new SocketIO.Server(this.http, {
             transports: ['websocket'],
             cors: {
                 origin: "*",
-                methods: ["GET", "POST"],
-                credentials: isSecure(),
+                methods: ["GET", "POST"]
             }
         });
-        
+
         // Ajoute les middleware
         console.debug("Ajout des middleware");
         this.server = new ServerManager(this);
@@ -90,6 +93,8 @@ export class Reileta extends EventEmitter {
 
         // Initialise les managers
         this.prisma = new PrismaClient();
+        this.cache = new CacheManager(this);
+        this.players = new PlayerManager(this);
         this.auth = new AuthManager(this);
         this.sessions = new SessionManager(this);
         this.users = new UserManager(this);
@@ -98,7 +103,7 @@ export class Reileta extends EventEmitter {
         this.home = new HomeManager(this);
         this.instances = new InstanceManager(this);
         this.integrity = new IntegrityManager(this);
-        this.follows = new FollowManager(this); 
+        this.follows = new FollowManager(this);
 
 
         // Reférence le gestionnaire de plugins
@@ -111,12 +116,12 @@ export class Reileta extends EventEmitter {
         this.express._router.stack.forEach(function (r: any) {
             if (r.route && r.route.path) {
                 for (const method in r.route.methods)
-                    console.log(method.toUpperCase()+'\t', r.route.path);
+                    console.log(method.toUpperCase() + '\t', r.route.path);
             }
         })
 
         this.http.listen(getPort(), () => {
-            console.log(`Service "${getName()}" started at ${getMyAdress()}.`);
+            console.log(`Service "${this.server.getInfos().title}" started at ${this.server.getInfos().gateways.http}.`);
             this.ready_at = new Date();
         });
     }

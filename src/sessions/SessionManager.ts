@@ -1,99 +1,56 @@
 import { Reileta } from "../Reileta";
-import { randomBytes } from "crypto";
 import { SessionAPIWeb } from "./SessionAPIWeb";
-import { Session } from "@prisma/client";
 import { SessionInfo, UserInfo, UserInput } from "../utils/Interfaces";
-import { ErrorMessage, checkUserTags, generateSessionToken } from "../utils/Security";
-import { ErrorCodes, getMyAdress } from "../utils/Constants";
+import { ErrorMessage, generateSessionToken } from "../utils/Security";
+import { ErrorCodes } from "../utils/Constants";
+import User from "../users/User";
+import Session from "./Session";
 
 export class SessionManager {
 
     api_web: SessionAPIWeb;
 
+    /**
+     * Get a session
+     * @param id Session id
+     */
+    async get(id: SessionGetSearch, who?: User | "bypass"): Promise<Session | ErrorMessage> {
+        if (!id.token && !id.id)
+            return new ErrorMessage(ErrorCodes.SessionInvalidInput);
+        if (!id.force && id.id) {
+            const cached = this.app.cache.get<Session>(id.id);
+            if (cached instanceof Session) return cached;
+        }
+        if (id.token)
+            return await (new Session(this.app, this)).importFromToken(id.token);
+        else if (id.id)
+            return await (new Session(this.app, this)).importFromId(id.id);
+        return new ErrorMessage(ErrorCodes.InternalError);
+    }
+
+    async create(user: User, who?: User | "bypass"): Promise<Session | ErrorMessage> {
+        const session = await (new Session(this.app, this)).generate(user);
+        if (session instanceof ErrorMessage) return session;
+        this.app.cache.set<Session>(session.id, session);
+        return session;
+    }
+
+    async delete(id: string, who?: User | "bypass") {
+        const session = await this.get({ id }, who);
+        if (session instanceof ErrorMessage) return session;
+        this.app.cache.delete(session.id);
+        if (!await session.delete())
+            return new ErrorMessage(ErrorCodes.InternalError);
+        return true;
+    }
+
     constructor(private readonly app: Reileta) {
         this.api_web = new SessionAPIWeb(this.app, this);
     }
+}
 
-    /**
-     * Get a session
-     * @param search Session id or token
-     * @returns 
-     */
-    async getSession(search?: string): Promise<SessionInfo | ErrorMessage> {
-        try {
-            if (!search || typeof search !== "string")
-                return new ErrorMessage(ErrorCodes.SessionInvalidInput);
-            const session = await this.app.prisma.session.findFirst({
-                where: { OR: [{ id: search }, { token: search }] }
-            });
-            if (!session)
-                return new ErrorMessage(ErrorCodes.SessionNotFound);
-            let user = await this.app.users.getInternalUser(session.user_id);
-            if (user instanceof ErrorMessage)
-                return user;
-            return {
-                id: session.id,
-                token: session.token,
-                created_at: session.created_at,
-                user_id: session.user_id,
-                user: user
-            }
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-    }
-
-    /**
-     * Create a session
-     * @param user_id User id
-     * @returns 
-     */
-    async createSession(user?: UserInput): Promise<SessionInfo | ErrorMessage> {
-        try {
-            if (!user)
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            let session = await this.app.prisma.session.create({
-                data: { user_id: user.id, token: generateSessionToken() }
-            });
-            if (!session)
-                return new ErrorMessage(ErrorCodes.InternalError);
-            let user_info = await this.app.users.getInternalUser(user.id);
-            if (user_info instanceof ErrorMessage)
-                return user_info;
-            return {
-                id: session.id,
-                token: session.token,
-                created_at: session.created_at,
-                user_id: session.user_id,
-                user: user_info
-            }
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-    }
-
-    /**
-     * Delete a session
-     * @param search Session id or token
-     * @returns 
-     */
-    async deleteSession(search?: string, who?: UserInfo): Promise<ErrorMessage | null> {
-        try {
-            if (!search || typeof search !== "string")
-                return new ErrorMessage(ErrorCodes.SessionInvalidInput);
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            var i = await this.app.prisma.session.deleteMany({
-                where: { OR: [{ id: search }, { token: search }] }
-            });
-            if (i.count === 0)
-                return new ErrorMessage(ErrorCodes.SessionNotFound);
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-        return null;
-    }
+export interface SessionGetSearch {
+    token?: string;
+    id?: string;
+    force?: boolean;
 }

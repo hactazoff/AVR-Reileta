@@ -29,46 +29,34 @@ export class AuthAPISocket {
     }
 
     async onAuthenticateWithToken(socket: SocketType, token: string, obj: RequestSocket<any>) {
-        let session = await this.app.sessions.getSession(token);
+        let session = await this.app.sessions.get({ token }, "bypass");
         if (session instanceof ErrorMessage) return socket.emit('avr/authenticate', session, obj.state);
-        socket.join('avr:user:' + session.user.id);
-        if (session.user.tags.includes('avr:admin'))
+        const user = await session.getUser("bypass");
+        if (user instanceof ErrorMessage) return socket.emit('avr/authenticate', user, obj.state);
+        socket.join('avr:user:' + user.id);
+        if (user.tags.includes('avr:admin'))
             socket.join('avr:admin');
-        socket.data.user_id = session.user_id;
+        socket.data.user_ids = user.toString();
         socket.data.session_id = session.id;
         socket.data.is_internal = true;
         socket.data.is_integrity = false;
         socket.emit('avr/authenticate', {
             internal: true,
             user: {
-                id: session.user.id,
-                username: session.user.username,
-                display: session.user.display,
-                server: session.user.server
+                id: user.id,
+                username: user.username,
+                display: user.display,
+                server: user.server,
+                thumbnail: user.thumbnail?.href,
+                banner: user.banner?.href,
+                tags: user.tags,
+                external: !user.internal,
             } as ResponseUserMeInfo
         }, obj.state);
-        console.log('User', session.user.id, 'connected with token');
+        console.log('User', user.id, 'connected with token');
     }
 
     async onAuthenticateWithIntegrity(socket: SocketType, integrity: string, obj: RequestSocket<any>) {
-        let session = await this.app.integrity.getIntegrity(integrity);
-        if (session instanceof ErrorMessage) return socket.emit('avr/authenticate', session, obj.state);
-        var u = this.app.users.objectToStrId(session.user);
-        if (!u) return socket.emit('avr/authenticate', new ErrorMessage(ErrorCodes.InternalError), obj.state);
-        socket.join('avr:user:' + u);
-        socket.data.user_id = u;
-        socket.data.session_id = session.id;
-        socket.data.is_internal = false;
-        socket.data.is_integrity = true;
-        socket.emit('avr/authenticate', {
-            internal: false,
-            user: {
-                id: session.user.id,
-                username: session.user.username,
-                display: session.user.display,
-                server: session.user.server
-            } as ResponseUserInfo
-        }, obj.state);
-        console.log('User', session.user.id, 'connected with integrity');
+        return socket.emit('avr/authenticate', new ErrorMessage(ErrorCodes.NotImplemented), obj.state);
     }
 }

@@ -2,9 +2,10 @@ import { NextFunction } from "express";
 import { Reileta } from "../Reileta";
 import { ARequest, AResponse, ResponseLogin, ResponseRegister, ResponseUserMeInfo } from "../utils/Interfaces";
 import { AuthManager } from "./AuthManager";
-import { CookieValue } from "../utils/Constants";
+import { CookieValue, ErrorCodes } from "../utils/Constants";
 import { ErrorMessage } from "../utils/Security";
 import Express from "express";
+import { log } from "console";
 
 export class AuthAPIWeb {
     constructor(private readonly app: Reileta, private readonly manager: AuthManager) {
@@ -15,24 +16,27 @@ export class AuthAPIWeb {
     }
 
     async getLogin(request: ARequest, response: AResponse) {
-        const logged = await this.manager.login(request.body, request.data?.session?.user);
+        const logged = await this.manager.login(request.body);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
-        response.cookie(CookieValue, logged.session.token);
+        response.cookie(CookieValue, logged.token);
+        const user = await logged.getUser("bypass");
+        if (user instanceof ErrorMessage)
+            return response.send(user);
         var res: ResponseLogin = {
-            id: logged.session.id,
-            token: logged.session.token,
-            created_at: logged.session.created_at.getTime(),
+            id: logged.id,
+            token: logged.token,
+            created_at: logged.created_at.getTime(),
             user: {
-                id: logged.user.id,
-                username: logged.user.username,
-                display: logged.user.display,
-                thumbnail: logged.user.thumbnail?.href,
-                banner: logged.user.banner?.href,
+                id: user.id,
+                username: user.username,
+                display: user.display,
+                thumbnail: user.thumbnail?.href,
+                banner: user.banner?.href,
                 friends: [],
-                tags: logged.user.tags,
+                tags: user.tags,
                 status: "offline",
-                server: logged.user.server,
+                server: user.server,
 
             }
         }
@@ -40,7 +44,11 @@ export class AuthAPIWeb {
     }
 
     async getLogout(request: ARequest, response: AResponse) {
-        const logged = await this.manager.logout(request.data?.session, request.data?.session?.user);
+        if (!request.data?.session)
+            return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        const user = await request.data?.session.getUser("bypass");
+        if (user instanceof ErrorMessage) return response.send(user);
+        const logged = await this.manager.logout(request.data?.session.id, user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.clearCookie(CookieValue);
@@ -48,7 +56,10 @@ export class AuthAPIWeb {
     }
 
     async postDetele(request: ARequest, response: AResponse) {
-        const logged = await this.manager.delete(request.data?.session?.user);
+        const user = await request.data?.session?.getUser("bypass");
+        if (!user) return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        if (user instanceof ErrorMessage) return response.send(user);
+        const logged = await this.manager.delete(user);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
         response.clearCookie(CookieValue);
@@ -56,33 +67,38 @@ export class AuthAPIWeb {
     }
 
     async getRegister(request: ARequest, response: AResponse) {
-        const logged = await this.manager.register(request.body, request.data?.session?.user);
+        const logged = await this.manager.register(request.body);
         if (logged instanceof ErrorMessage)
             return response.send(logged);
-        response.cookie(CookieValue, logged.session.token);
+        const user = await logged.getUser("bypass");
+        if (user instanceof ErrorMessage)
+            return response.send(user);
+        response.cookie(CookieValue, logged.token);
         const res: ResponseRegister = {
-            id: logged.session.id,
-            token: logged.session.token,
-            created_at: logged.session.created_at.getTime(),
+            id: logged.id,
+            token: logged.token,
+            created_at: logged.created_at.getTime(),
             user: {
-                id: logged.user.id,
-                username: logged.user.username,
-                display: logged.user.display,
-                thumbnail: logged.user.thumbnail?.href,
-                banner: logged.user.banner?.href,
+                id: user.id,
+                username: user.username,
+                display: user.display,
+                thumbnail: user.thumbnail?.href,
+                banner: user.banner?.href,
                 friends: [],
-                tags: logged.user.tags,
+                tags: user.tags,
                 status: "offline",
-                server: logged.user.server,
+                server: user.server,
             }
         }
         response.send({ data: res });
     }
 
     use(request: ARequest, response: AResponse, next: NextFunction) {
+        let token = request.get('Authorization');
+        if (token && token.startsWith("Bearer "))
+            token = token.split(" ")[1];
         request.data = {
-            token: (typeof request.query.authuser === "string" && request.query.authuser) 
-                || request.get('Authorization') || request.cookies[CookieValue],
+            token: (typeof request.query.authuser === "string" && request.query.authuser) || token || request.cookies[CookieValue],
             session: undefined
         };
         next();

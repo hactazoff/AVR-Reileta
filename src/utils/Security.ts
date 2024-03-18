@@ -130,6 +130,7 @@ export function checkServerResponse(data: any): data is ResponseServerInfo {
     var i = typeof data === "object"
         && typeof data.id === "string"
         && typeof data.title === "string"
+        && typeof data.description === "string"
         && typeof data.address === "string"
         && typeof data.gateways === "object"
         && typeof data.gateways.http === "string"
@@ -306,8 +307,8 @@ export function checkInstanceInput(input: any, who?: UserInfo): input is Instanc
         && ((Array.isArray(input.tags) && input.tags.every((t: any) => typeof t === "string" && !t.includes(','))) || typeof input.tags === "undefined");
     if (!i) return false;
     for (const tag of input.tags || [])
-        if (tag in MatchTags.Instance) {
-            const info = MatchTags.Instance[tag as "avr:public"];
+        if (tag in MatchTags.Instance.tags) {
+            const info = MatchTags.Instance.tags[tag];
             if (info.for_admin && (!who || !checkUserTags(who, ["avr:admin"])))
                 return false;
             for (const overhide of info.overhide)

@@ -14,8 +14,8 @@ export class SessionAPIWeb {
      * @param next 
      */
     async use(request: ARequest, response: AResponse, next: NextFunction) {
-        if(request.data && request.data.token) {
-            const out = await this.manager.getSession(request.data.token);
+        if (request.data && request.data.token) {
+            const out = await this.manager.get({ token: request.data.token }, "bypass");
             request.data.session = out instanceof ErrorMessage ? undefined : out;
         }
         next();

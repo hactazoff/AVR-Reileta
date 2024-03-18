@@ -33,22 +33,26 @@ Reileta is a system for the management for AtelierVR.
 ## How to install
 
 1) Clone the repository
+
 ```sh
 git clone https://github.com/hactazoff/AVR-Reileta.git
 cd AVR-Reileta/
 ```
 
 2) Install the dependencies
+
 ```sh
 npm install
 ```
 
 3) Create a .env file and fill it with the .env.example file
+
 ```sh
 cp .env.example .env
 ```
 
 4) Start the server
+
 ```sh
 npm run dev
 ```
@@ -78,10 +82,6 @@ npm run dev
 - `HIDE_IP=boolean` - If you can hide the ip
 ' `REILETA_CAN_UPLOAD_FILE=boolean` - If you can upload files
 - `REILETA_FILE_PATH=string` - The file origin path
-
-
-
-
 
 ## Eta (Registry Server)
 
@@ -154,7 +154,7 @@ A sample response looks like this:
 
 >Tips: If you use `@me` as user `:id`, you can get the information about the current user.
 You can find a user by its ID or its name.
-The `:server` parameter is optional and only needed if you want to get the information of a user on a specific server. You can't not use ids with starting with `@`, because they are reserved for the system. For example `@me` is the current user, `@server` is the server, and `@admin` is the main admin of the server.
+The `:server` parameter is optional and only needed if you want to get the information of a user on a specific server. You can't not use ids with starting with `@`, because they are reserved for the system. For example `@me` is the current user, `@root` is the root user, and `@admin` is the main admin of the server.
 
 - [GET /api/users](#get-apiusers) - Get all users
 - [GET /api/users/:id](#get-apiusersid) - Get a user information
@@ -293,32 +293,83 @@ Sample response:
 - `ERROR_CODE` is the error code of the response.
 - `ERROR_MESSAGE` is the error message of the response.
 
-#### General
+### Request Events
 
-- [ping](#ws-ping) - Get the pong of the server
-- [authenticate](#ws-authenticate) - Authenticate to the server
+#### In `local` eventName
 
-#### Event Subscriptions
+- [avr/ping](#ws-ping) - Get the pong of the server
 
-- [subscribe](#ws-subscribe) - Subscribe to a event
-- [unsubscribe](#ws-unsubscribe) - Unsubscribe to a event
+    ```ts
+    {
+        "i": number, // Initial timestamp by the client
+    }
+    ```
 
-#### Instances
+- [avr/authenticate](#ws-authenticate) - Authenticate to the server
 
-- [instance-enter](#ws-join) - Join a instance
-- [instance-quit](#ws-leave) - Leave a instance
+    ```ts
+    {
+        "token"?: string, // The token of the user
+        "integrity"?: string // The integrity token of the user
+    }
+    ```
 
-### Events
+- [avr/enter](#ws-join) - Join a instance
+
+    ```ts
+    {
+        "instance": string, // The instance id
+    }
+    ```
+
+- [avr/quit](#ws-leave) - Leave a instance
+
+    ```ts
+    {
+        "instance": string, // The instance id
+    }
+    ```
+
+#### In `<id_instance>` eventName
+
+- [avr/moderate](#ws-moderate) - Moderate a user
+
+    ```ts
+    {
+        "to_socket": string, // The socket id of the user
+        "type": ModerationType // If the user is moderate
+    }
+    ```
+
+- [avr/transform](#ws-transform) - Transform in the instance
+
+    ```ts
+    {
+        "path": string, // The path of the transform, for a playere, it's `p:<@me|player_id>/<path>`
+        "p": Transform.Position,
+        "r": Transform.Rotation,
+        "s": Transform.Scale,
+        "v": Transform.Velocity,
+        "a": Transform.Acceleration
+    }
+    ```
+
+### Response Events
+
+#### In `local` eventName
 
 - [avr/ping](#ws-ping) - Pong of the server
     > The event is't send in logs.
+
     ```ts
     {
         "i": number, // Initial timestamp by the client
         "o": number // Timestamp by the server
     }
     ```
+
 - [avr/authenticate](#ws-authentication) - All authentication events
+
     ```ts
     {
         "internal": boolean, // If use token or not
@@ -330,59 +381,85 @@ Sample response:
         }
     }
     ```
-- [update-user](#ws-update-user-me) - The users is updated
-- [update](#ws-update) - All update events
-- [update-server](#ws-update-server) - The server is updated
-- [update-world](#ws-update-world) - The world is updated
-- [update-service](#ws-update-service) - The service is updated
-- [update-instance](#ws-update-instance) - The instances is updated
-- [avr/instance:join](#ws-instance-join) - A user joined a instance
+
+- [avr/enter](#ws-instance-enter) - The current user entered a instance
+
     ```ts
     {
-        "socket": string, // The socket id of the user
-        "user": string // The user id@server
-    }
-    ```
-- [avr/instance:left](#ws-instance-left) - A user left a instance
-    ```ts
-    {
-        "socket": string, // The socket id of the user
-        "code": number // The code of the leave
-    }
-    ```
-- [avr/instance:enter](#ws-instance-enter) - The current user entered a instance
-    ```ts
-    {
-        "socket": string, // The socket id of the user
+        "player": string, // The player id of the user
         "user": string, // The user id@server
     }
     ```
-- [avr/instance:quit](#ws-instance-leave) - The current user left a instance
+
+- [avr/quit](#ws-instance-leave) - The current user left a instance
+
     ```ts
     {
-        "socket": string, // The socket id of the user
+        "player": string, // The player id of the user
         "code": Instance.QuitType // The code of the leave
-        "message": string // The message of the leave
     }
     ```
-- [avr/instance:data](#ws-instance-data) - A user send data in the instance
-    > The event is't send in logs.
+#### In `<id_instance>` eventName
+
+- [avr/join](#ws-instance-join) - A user joined a instance
+
     ```ts
     {
-        "socket": string, // The socket id of the user
+        "player": string, // The player id of the user
+        "user": string // The user id@server
+    }
+    ```
+
+- [avr/left](#ws-instance-left) - A user left a instance
+
+    ```ts
+    {
+        "player": string, // The player id of the user
+        "type": QuitType // The code of the leave
+    }
+    ```
+
+- [avr/moderate](#ws-instance-moderate) - Response of the moderation
+
+    ```ts
+    {
+        "to_player": string, // The player id of the user
+        "type": ModerationType // If the user is moderate
+    }
+    ```
+
+- [avr/moderation](#ws-instance-moderation) - A user is moderate
+
+    ```ts
+    {
+        "to_player": string, // The player id of the user
+        "by_player": string, // The player id of the moderator
+        "type": ModerationType // If the user is moderate
+    }
+    ```
+
+- [avr/data](#ws-instance-data) - A user send data in the instance
+    > The event is't send in logs.
+
+    ```ts
+    {
+        "player": string, // The player id of the user
         "data": any // The data of the user
     }
     ```
-- [avr/instance:transform](#ws-instance-transform) - A user transform in the instance
+
+- [avr/transform](#ws-instance-transform) - A user transform in the instance
     > The event is't send in logs.
+
     ```ts
     {
-        "socket": string, // The socket id of the user
+        "player": string, // The player id of the user
         "path": string, // The path of the transform
-        "position": Transform.Position,
-        "rotation": Transform.Rotation,
-        "scale": Transform.Scale
+        "p": Transform.Position,
+        "r": Transform.Rotation,
+        "s": Transform.Scale,
+        "v": Transform.Velocity,
+        "a": Transform.Acceleration
+        "at": number // custom number to prevent rollback
     }
     ```
-- [instance-candidate](#ws-instance-candidate) - A user is a candidate to join or cancel the instance
-- [instance-queue](#ws-instance-queue) - The queue of the instance is updated

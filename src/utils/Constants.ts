@@ -1,12 +1,13 @@
 import { randomBytes } from "crypto";
-import { ErrorCode } from "./Interfaces";
+import * as Interfaces from "./Interfaces";
 import path from "path";
 import { cwd } from "process";
+import { MatchTagValue } from "./Interfaces";
 
 const { randomUUID } = require("crypto");
 
 export const CookieValue = "_suid";
-
+export const SafeLocalhostAdress = "::";
 export const MatchPassword = /^.{8,}$/;
 export const MatchDisplay = /^.{3,16}$/;
 export const MatchName = /^[A-Za-z][A-Za-z0-9_]{3,16}$/
@@ -17,63 +18,202 @@ export const MatchID = {
     Avatar: /^a_[a-f0-9-]{36}$/,
     File: /^f_[a-f0-9-]{36}$/,
     Instance: /^i_[a-f0-9-]{36}$/,
+    Session: /^s_[a-f0-9-]{36}$/,
 }
 
-export const MatchTags = {
+function optimiser<T>(tags: T[], collector: [T, MatchTagValue<T>][], required_groups: number[], user_admin: boolean = false): T[] {
+    const map = new Map<T, MatchTagValue<T>>(collector);
+    let changed = false;
+    let groups = new Set<number>();
+    tags = tags.filter(e => map.has(e));
+
+    for (const t of tags.map(e => map.get(e) as MatchTagValue<T>))
+        if (t.group)
+            groups.add(t.group);
+
+    for (const [tag] of collector) {
+        const info = map.get(tag) as MatchTagValue<T>;
+        if (info.group && !groups.has(info.group) && required_groups.includes(info.group))
+            tags.push(tag);
+    }
+
+    do {
+        changed = false;
+        for (const t of tags) {
+            const info = map.get(t) as MatchTagValue<T>;
+            if (info.for_admin && !user_admin) {
+                tags = tags.filter(e => e !== t);
+                changed = true;
+            }
+            if (info.overhide)
+                for (const overhide of info.overhide)
+                    if (tags.includes(overhide)) {
+                        tags = tags.filter(e => e !== overhide);
+                        changed = true;
+                    }
+        }
+    } while (changed);
+
+    return tags;
+}
+
+export const MatchTags: Interfaces.MatchTags = {
+    World: {
+        optimise(tags: Interfaces.MatchUserTagNames[], who?: Interfaces.UserInfo) {
+            return optimiser(tags, Object.entries(this.tags), this.required_groups, who?.tags.includes("avr:admin"));
+        },
+        required_groups: [1, 2],
+        tags: {
+            "avr:public": {
+                for_admin: false,
+                display: "Public",
+                description: "Anyone can join",
+                overhide: [],
+                group: 1
+            },
+            "avr:private": {
+                for_admin: false,
+                display: "Private",
+                description: "World is private",
+                overhide: ["avr:public"],
+                group: 1
+            },
+            "avr:develepement": {
+                for_admin: false,
+                display: "Develepement",
+                description: "World is in develepement",
+                overhide: [],
+                group: 2
+            },
+            "avr:release": {
+                for_admin: false,
+                display: "Release",
+                description: "World is released",
+                overhide: ["avr:develepement"],
+                group: 2
+            },
+            "avr:official": {
+                for_admin: true,
+                display: "Official",
+                description: "World is official",
+                overhide: [],
+                group: 0
+            },
+        }
+    },
     Instance: {
-        "avr:public": {
-            for_admin: false,
-            display: "Public",
-            description: "Anyone can join",
-            overhide: [],
-            group: 1
-        }, 
-        "avr:permanent": {
-            for_admin: true,
-            display: "Permanent",
-            description: "Instance will not be deleted when empty",
-            overhide: ["avr:kill_on_owner_leave"]
+        optimise(tags, who?: Interfaces.UserInfo) {
+            return optimiser(tags, Object.entries(this.tags), this.required_groups, who?.tags.includes("avr:admin")) as Interfaces.MatchInstanceTagNames[];
         },
-        "avr:official": {
-            for_admin: true,
-            description: "Instance will be displayed in the official server list",
-            display: "Official",
+        required_groups: [1],
+        tags: {
+            "avr:public": {
+                for_admin: false,
+                display: "Public",
+                description: "Anyone can join",
+                overhide: [],
+                group: 1
+            },
+            "avr:permanent": {
+                for_admin: true,
+                display: "Permanent",
+                description: "Instance will not be deleted when empty",
+                overhide: ["avr:kill_on_owner_leave"],
+                group: 0
+            },
+            "avr:official": {
+                for_admin: true,
+                description: "Instance will be displayed in the official server list",
+                display: "Official",
+                overhide: [],
+                group: 0
+            },
+            "avr:friends_plus": {
+                for_admin: false,
+                display: "Friends and friends of friends",
+                description: "Friends of members can join",
+                overhide: ["avr:public"],
+                group: 1
+            },
+            "avr:friends_only": {
+                for_admin: false,
+                display: "Friends only",
+                description: "Only friends of owner and master can join",
+                overhide: ["avr:public", "avr:friends_plus"],
+                group: 1
+            },
+            "avr:invite_plus": {
+                for_admin: false,
+                display: "Invite Plus",
+                description: "Only invited users by members can join",
+                overhide: ["avr:public", "avr:friends_plus", "avr:friends_only"],
+                group: 1
+            },
+            "avr:invite_only": {
+                for_admin: false,
+                display: "Invite only",
+                description: "Only invited users by owner and master can join",
+                overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus"],
+                group: 1
+            },
+            "avr:private": {
+                for_admin: false,
+                display: "Private",
+                description: "Only owner can join",
+                overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus", "avr:invite_only"],
+                group: 1
+            }
+        }
+    },
+    User: {
+        optimise(tags, who?: Interfaces.UserInfo) {
+            return optimiser(tags, Object.entries(this.tags), this.required_groups, who?.tags.includes("avr:admin"));
         },
-        "avr:friends_plus": {
-            for_admin: false,
-            display: "Friends and friends of friends",
-            description: "Friends of members can join",
-            overhide: ["avr:public"],
-            group: 1
-        },
-        "avr:friends_only": {
-            for_admin: false,
-            display: "Friends only",
-            description: "Only friends of owner and master can join",
-            overhide: ["avr:public", "avr:friends_plus"],
-            group: 1
-        },
-        "avr:invite_plus": {
-            for_admin: false,
-            display: "Invite Plus",
-            description: "Only invited users by members can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only"],
-            group: 1
-        },
-        "avr:invite_only": {
-            for_admin: false,
-            display: "Invite only",
-            description: "Only invited users by owner and master can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus"],
-            group: 1
-        },
-        "avr:private": {
-            for_admin: false,
-            display: "Private",
-            description: "Only owner can join",
-            overhide: ["avr:public", "avr:friends_plus", "avr:friends_only", "avr:invite_plus", "avr:invite_only"],
-            group: 1
-        },
+        required_groups: [],
+        tags: {
+            "avr:admin": {
+                for_admin: true,
+                display: "Administator",
+                description: "User is admin",
+                overhide: [],
+                group: 0
+            },
+            "avr:bot": {
+                for_admin: true,
+                display: "Bot",
+                description: "User is bot",
+                overhide: [],
+                group: 0
+            },
+            "avr:world_creator": {
+                for_admin: false,
+                display: "World Creator",
+                description: "User can create worlds",
+                overhide: [],
+                group: 0
+            },
+            "avr:instance_creator": {
+                for_admin: false,
+                display: "Instance Creator",
+                description: "User can create instances",
+                overhide: [],
+                group: 0
+            },
+            "avr:disabled": {
+                for_admin: true,
+                display: "Disabled",
+                description: "User is disabled",
+                overhide: [],
+                group: 0
+            },
+            "avr:root": {
+                for_admin: true,
+                display: "Root",
+                description: "User is root",
+                overhide: [],
+                group: 0
+            }
+        }
     }
 }
 
@@ -85,39 +225,16 @@ export const GenerateId = {
     Avatar: () => `a_${randomUUID()}`,
     File: () => `f_${randomUUID()}`,
     Instance: () => `i_${randomUUID()}`,
+    InstanceName: () => `${randomBytes(3).toString('hex')}`,
+    UserName: () => `${randomBytes(5).toString('hex')}`,
+    Session: () => `s_${randomUUID()}`,
+    Player: () => `p_${randomUUID()}`,
 }
 
 export const TrustedDomainRegex = [
-    // raw.githubusercontent.com
     /^raw\.githubusercontent\.com$/,
-    // *.hactazia.fr
     /^([a-z0-9]+)\.hactazia\.fr$/,
 ]
-
-
-export function getMyAdress(): string {
-    return process.env.REILETA_PREFERED_ADDRESS || '127.0.0.1:' + getPort();
-}
-
-export function getPort(): number {
-    return Number(process.env.REILETA_PORT) || 3032;
-}
-
-export function getName() {
-    return process.env.REILETA_TITLE || "Default Reileta Server";
-};
-
-export function getDescription() {
-    return process.env.REILETA_DESCRIPTION || "A server AtelierVR";
-}
-
-export function getIcon() {
-    return new URL(process.env.REILETA_ICON || `http${isSecure() ? 's' : ''}://${getMyAdress()}/icon.png`);
-}
-
-export function isSecure() {
-    return process.env.REILETA_SECURE === 'true';
-}
 
 export function getTmpFileExpiration() {
     return Number(process.env.REILETA_TMP_FILE_EXPIRATION) || 3e5;
@@ -143,7 +260,7 @@ export function getCanEditWorld() {
     return process.env.REILETA_CAN_EDIT_WORLD === 'true';
 }
 export function getDefaultUserTags() {
-    return process.env.REILETA_DEFAULT_USER_TAGS?.split(',').map(e=>e.trim()) || [];
+    return process.env.REILETA_DEFAULT_USER_TAGS?.split(',').map(e => e.trim()) || [];
 }
 
 export function getCanUploadAvatar() {
@@ -158,16 +275,12 @@ export function getCanUploadFile() {
     return process.env.REILETA_CAN_UPLOAD_FILE === 'true';
 }
 
-export function getFallbackWorld() {
-    return process.env.REILETA_WORLD_FALLBACK || "default";
-}
-
 export function getSupportedWorldAssetPlatforms() {
-    return process.env.REILETA_SUPPORTED_WORLD_ASSET_PLATFORMS?.split(',').map(e=>e.trim()) || [];
+    return process.env.REILETA_SUPPORTED_WORLD_ASSET_PLATFORMS?.split(',').map(e => e.trim()) || [];
 }
 
 export function getSupportedWorldAssetEngine() {
-    return process.env.REILETA_SUPPORTED_WORLD_ASSET_ENGINE?.split(',').map(e=>e.trim()) || [];
+    return process.env.REILETA_SUPPORTED_WORLD_ASSET_ENGINE?.split(',').map(e => e.trim()) || [];
 }
 
 export function getFilePath() {
@@ -306,12 +419,12 @@ export const ErrorCodes = {
         message: "World not found",
         code: 25,
         status: 404
-    }, 
+    },
     WorldAssetInvalidInput: {
         message: "World asset invalid input",
         code: 26,
         status: 400
-    }, 
+    },
     WorldAssetNotFound: {
         message: "World asset not found",
         code: 27,
@@ -371,5 +484,65 @@ export const ErrorCodes = {
         message: "Tag not found",
         code: 38,
         status: 403
+    },
+    NotInInstance: {
+        message: "Not in instance",
+        code: 39,
+        status: 403
+    },
+    InvalidModerationType: {
+        message: "Invalid moderation type",
+        code: 40,
+        status: 400
+    },
+    ObjectNotInternal: {
+        message: "Object not internal",
+        code: 41,
+        status: 403
+    },
+    Teapot: {
+        message: "I'm a teapot",
+        code: 42,
+        status: 418
+    },
+    UserDontHaveHome: {
+        message: "User don't have home",
+        code: 43,
+        status: 403
+    },
+    WorldAlreadyExists: {
+        message: "World already exists",
+        code: 44,
+        status: 409
+    },
+    AssetAlreadyExists: {
+        message: "Asset already exists",
+        code: 45,
+        status: 409
+    },
+    FileNotUploaded: {
+        message: "File not uploaded",
+        code: 46,
+        status: 409
+    },
+    InstanceAlreadyExists: {
+        message: "Instance already exists",
+        code: 47,
+        status: 409
+    },
+    InstanceIsFull: {
+        message: "Instance is full",
+        code: 48,
+        status: 409
+    },
+    UserNotAllowed: {
+        message: "User not allowed",
+        code: 49,
+        status: 403
+    },
+    PlayerNotFound: {
+        message: "Player not found",
+        code: 50,
+        status: 404
     },
 };

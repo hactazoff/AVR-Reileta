@@ -1,6 +1,6 @@
 import Express, { NextFunction } from "express";
 import { Reileta } from "../Reileta";
-import { ARequest, AResponse } from "../utils/Interfaces";
+import { ARequest, AResponse, ResponseServerInfo, ServerInfo } from "../utils/Interfaces";
 import { ServerManager } from "./ServerManager";
 import { ErrorCodes } from "../utils/Constants";
 import { ErrorMessage } from "../utils/Security";
@@ -12,7 +12,7 @@ export class ServerAPIWeb {
 
         // TODO: Server API
         this.app.express.get('/api/server', (q, s: any) => this.getInfo(s));
-        this.app.express.post('/api/server', Express.json(), (q, s: any) => this.notImplemented(q, s));
+        // this.app.express.post('/api/server', Express.json(), (q, s: any) => this.notImplemented(q, s));
         this.app.express.get('/api/time', (q, s: any) => this.getTime(s));
         this.app.express.use('/.well-known/avr', (q, s: any) => this.wellKnownAVR(q, s));
     }
@@ -27,7 +27,28 @@ export class ServerAPIWeb {
     }
 
     async getExternalInfo(request: ARequest, response: AResponse) {
-        const server = await this.manager.getExternalServer(request.params.server, request.data?.session?.user);
+        if (!request.params.server)
+            return response.send(new ErrorMessage(ErrorCodes.ServerInvalidInput));
+        const user = await request.data?.session?.getUser("bypass");
+        if (!user) return response.send(new ErrorMessage(ErrorCodes.UserNotLogged));
+        if (user instanceof ErrorMessage) return response.send(user);
+        const server = await this.manager.getExInfos(request.params.server, user);
+        if (server instanceof ErrorMessage) return response.send(server);
+        const serverInfo: ResponseServerInfo = {
+            id: server.id,
+            title: server.title,
+            description: server.description,
+            address: server.address,
+            gateways: {
+                http: server.gateways.http.origin,
+                ws: server.gateways.ws.origin
+            },
+            secure: server.secure,
+            version: server.version,
+            ready_at: server.ready_at.getTime(),
+            icon: server.icon.href
+        }
+        response.send({ data: serverInfo });
     }
 
     /**
@@ -35,7 +56,23 @@ export class ServerAPIWeb {
      * @param response 
      */
     getInfo(response: AResponse) {
-        response.send({ data: this.manager.getParsedInfo });
+        const infos = this.manager.getInfos();
+        response.send({
+            data: {
+                id: this.app.id,
+                title: infos.title || infos.id,
+                description: infos.description,
+                address: infos.address,
+                gateways: {
+                    http: infos.gateways.http.origin,
+                    ws: infos.gateways.ws.origin
+                },
+                secure: infos.secure,
+                version: this.app.version,
+                ready_at: this.app.ready_at.getTime(),
+                icon: infos.icon.href
+            }
+        });
     }
 
     /**
@@ -52,7 +89,7 @@ export class ServerAPIWeb {
      * @param response 
      */
     getTeapot(request: ARequest, response: AResponse) {
-        response.status(418).send({ data: "I'm a teapot" });
+        response.send(new ErrorMessage(ErrorCodes.Teapot));
     }
 
     /**

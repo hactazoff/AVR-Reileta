@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import Session from "../sessions/Session";
 
 export interface ARequest extends Request {
     data?: {
         token?: string
-        session?: SessionInfo
+        session?: Session
     }
 }
 
@@ -37,12 +38,11 @@ export interface SessionInfo {
 export interface ResponseServerInfo {
     id: string
     title: string
-    description?: string,
+    description: string,
     address: string,
     gateways: {
         http: string,
-        ws: string,
-        // proxy: string
+        ws: string
     }
     secure: boolean,
     version: string,
@@ -92,8 +92,8 @@ export interface UserInfo {
 
 export interface ServerInfo {
     id: string,
-    title?: string
-    description?: string,
+    title: string
+    description: string,
     address: string,
     gateways: {
         http: URL,
@@ -125,11 +125,12 @@ export interface ErrorCode {
 export interface SocketType extends Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any> {
     old_emit: (event: string, ...args: any[]) => boolean;
     data: {
-        user_id?: string;
+        user_ids?: string;
         session_id?: string;
         is_internal?: boolean;
         is_integrity?: boolean;
         ip: string;
+        players: string[];
     }
     emit: (command: string, data: any, state?: string, room?: string) => boolean;
 }
@@ -189,15 +190,15 @@ export interface WorldInstanceInfos extends WorldInfos {
 }
 
 export interface UserInstanceInfos extends UserInfo {
-    connection_id: string;
+    socket_id: string;
     is_moderator: boolean;
     is_owner: boolean;
     is_master: boolean;
     is_bot: boolean;
 }
 
-export interface OwnerInstanceInfos extends UserInfo {}
-export interface MasterInstanceInfos extends UserInfo {}
+export interface OwnerInstanceInfos extends UserInfo { }
+export interface MasterInstanceInfos extends UserInfo { }
 
 export interface InstanceInfos {
     id: string;
@@ -216,14 +217,15 @@ export interface InstanceInfos {
 
 export interface ResponseInstanceInfos {
     id: string;
+    description: string;
+    title: string;
     name: string;
-    world: string
-    owner: string
-    master: string | null;
+    world_ids: string
+    owner_ids: string
+    master_ids: string | null;
     capacity: number;
     server: string;
     tags: string[];
-    users: any[];
     connected: number;
 }
 
@@ -263,9 +265,9 @@ export type HomeInfo = WorldInfos;
 export interface ResponseWorldInfo {
     id: string;
     title: string;
-    description?: string;
+    description: string;
     capacity: number;
-    owner_id: string;
+    owner_ids: string;
     server: string;
     thumbnail?: string;
     tags: string[];
@@ -353,3 +355,97 @@ export interface FollowInfo {
     from: UserInfo;
     to: UserInfo;
 }
+
+export interface InstanceCache {
+    id: string;
+    instance: InstanceInfos;
+    global: InstanceSaveCache;
+    sockets: Map<string, InstanceSocketCache>;
+}
+
+export type InstanceSaveCache = Map<string, string | number | boolean>;
+
+export interface InstanceSocketCache {
+    id: string;
+    user: UserInfo;
+    transform: Transform;
+    save: InstanceSaveCache;
+}
+
+export interface Transform {
+    position: TransformPosition;
+    rotation: TransformRotation;
+    scale: TransformScale;
+}
+
+export interface TransformPosition {
+    x: number;
+    y: number;
+    z: number;
+}
+
+export interface TransformRotation {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+}
+
+export interface TransformScale {
+    x: number;
+    y: number;
+    z: number;
+}
+
+export enum QuitType {
+    Kicked = 0,
+    Banned = 2,
+    Closed = 3,
+    Disconnected = 4
+}
+
+export enum ModerationType {
+    Kick = 0,
+    Ban = 1,
+    Mute = 2,
+    Unmute = 3,
+    Warn = 4,
+    Unban = 5
+}
+
+export type MatchWorldTagNames = "avr:public" | "avr:private" | "avr:develepement" | "avr:release" | string;
+export type MatchInstanceTagNames = "avr:public" | "avr:private" | "avr:develepement" | "avr:release" | string;
+export type MatchUserTagNames = "avr:admin" | "avr:bot" | string;
+export type MatchTagValue<T> = {
+    for_admin: boolean,
+    display: string,
+    description: string,
+    overhide: T[],
+    group?: number
+}
+export interface MatchTags {
+    World: {
+        optimise: (tags: MatchWorldTagNames[], who?: UserInfo) => MatchWorldTagNames[],
+        required_groups: number[],
+        tags: {
+            [key: MatchWorldTagNames]: MatchTagValue<MatchWorldTagNames>
+        }
+    },
+    Instance: {
+        optimise: (tags: MatchWorldTagNames[], who?: UserInfo) => MatchWorldTagNames[],
+        required_groups: number[],
+        tags: {
+            [key: MatchInstanceTagNames]: MatchTagValue<MatchInstanceTagNames>
+        }
+    },
+    User: {
+        optimise: (tags: MatchUserTagNames[], who?: UserInfo) => MatchUserTagNames[],
+        required_groups: number[],
+        tags: {
+            [key: MatchUserTagNames]: MatchTagValue<MatchUserTagNames>
+        }
+    }
+}
+
+export type EngineType = "unity" | "unreal" | "godot" | "cryengine" | "lumberyard" | "other";
+export type PlatformType = "windows" | "linux" | "macos" | "android" | "ios" | "web" | "other";

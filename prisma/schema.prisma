@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id         String    @id @unique @default(uuid())
-  name       String    @unique
+  username   String    @unique
   display    String?
   sessions   Session[]
   password   String?
@@ -20,12 +20,11 @@ model User {
   banner     String?
   tags       String?
   email      String?
-  home       String? // <id>@<address> (world)
-  avatar     String? // <id>@<address> (avatar)
+  home_ids   String? // <id>@<address> (world)
+  avatar_ids String? // <id>@<address> (avatar)
   follows    Follow[]
   updated_at DateTime  @default(now()) @updatedAt
   created_at DateTime  @default(now())
-  worlds     World[]
 }
 
 model Session {
@@ -58,13 +57,12 @@ model Follow {
 
 model World {
   id          String       @id @unique @default(uuid())
-  title       String       @unique
+  title       String
   description String?
   thumbnail   String?
   capacity    Int
   tags        String?
-  owner_id    String
-  owner       User         @relation(fields: [owner_id], references: [id])
+  owner_ids   String
   updated_at  DateTime     @default(now()) @updatedAt
   created_at  DateTime     @default(now())
   assets      WorldAsset[]
@@ -100,8 +98,8 @@ model Instance {
   title       String?
   description String?
   capacity    Int
-  world       String
-  owner       String
+  world_ids   String
+  owner_ids   String
   tags        String?
   updated_at  DateTime @default(now()) @updatedAt
   created_at  DateTime @default(now())

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 50%;
+      height: 100%;
+      overflow: auto;
+    }
+
+    .right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      overflow: auto;
+    }
+
+    #three {
+      width: 100%;
+      height: 100%;
+    }
+
+    code {
+      font-family: monospace;
+      white-space: pre;
+    }
+  </style>
+
+</head>
+
+<body>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <div>
+    <div class="left"><code id="data"></code></div>
+    <div class="right">
+      <div id="three"></div>
+    </div>
+  </div>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.162.0/+esm';
+    window.addEventListener('load', () => {
+      const node = document.getElementById('three');
+
+      const width = node.clientWidth;
+      const height = node.clientHeight;
+
+      // init
+
+      const camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 10);
+      camera.position.z = 1;
+
+      const scene = new THREE.Scene();
+
+      const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+      const material = new THREE.MeshMatcapMaterial({
+        color: 0x00ff00,
+        transparent: true,
+      })
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+      renderer.setSize(width, height);
+      renderer.setAnimationLoop(animation);
+      node.appendChild(renderer.domElement);
+
+      // animation
+
+      function animation(time) {
+        for (let transform of Object.values(window.transform)) {
+          const mesh = scene.getObjectByName(transform.path);
+          if (mesh) {
+            mesh.position.x = transform.p.x;
+            mesh.position.y = transform.p.y;
+            mesh.position.z = transform.p.z;
+            mesh.rotation.x = transform.r.x;
+            mesh.rotation.y = transform.r.y;
+            mesh.rotation.z = transform.r.z;
+            mesh.scale.x = transform.s.x;
+            mesh.scale.y = transform.s.y;
+            mesh.scale.z = transform.s.z;
+          } else {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.name = transform.path;
+            scene.add(mesh);
+          }
+        }
+
+        if (keys.ArrowUp) camera.position.z -= time * 0.00001;
+        if (keys.ArrowDown) camera.position.z += time * 0.00001;
+        if (keys.ArrowLeft) camera.position.x -= time * 0.00001;
+        if (keys.ArrowRight) camera.position.x += time * 0.00001;
+        if (keys[' ']) camera.position.y += time * 0.00001;
+        if (keys.Shift) camera.position.y -= time * 0.00001;
+
+
+        renderer.render(scene, camera);
+      }
+
+      // resize
+      window.addEventListener('resize', () => {
+        const width = node.clientWidth;
+        const height = node.clientHeight;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      });
+
+      // mouvement with mouse and arrow keys
+      const keys = {
+        ArrowUp: false,
+        ArrowDown: false,
+        ArrowLeft: false,
+        ArrowRight: false,
+        " ": false,
+        Shift: false
+
+      };
+      window.addEventListener('keydown', (event) => {
+        console.log(event.key);
+        if (event.key in keys) {
+          keys[event.key] = true;
+          event.preventDefault();
+        }
+      });
+
+      window.addEventListener('keyup', (event) => {
+        if (event.key in keys) {
+          keys[event.key] = false;
+          event.preventDefault();
+        }
+      });
+
+      node.addEventListener('mousemove', (event) => {
+        if (event.buttons === 1) {
+          const x = event.movementX / window.innerWidth;
+          const y = event.movementY / window.innerHeight;
+          camera.rotation.x += y;
+          camera.rotation.y -= x;
+
+          // teleport mouse to center
+          window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: node.clientWidth / 2,
+            clientY: node.clientHeight / 2
+          }));
+        }
+      });
+    })
+  </script>
+  <script type="module">
+    window.transform = {};
+
+    function update() {
+      document.getElementById('data').innerHTML = JSON.stringify(transform, null, 4).replaceAll(' ', '&nbsp;').replaceAll('\n', '<br>');
+    }
+
+    update();
+    window.addEventListener('load', () => {
+        console.log('Loaded');
+        const token = "DGZhm75ccwgmqr0luhP4wpPjoJNogGm2t7wcOsVHFJ9mqqk7N+iwz0MCEbvkU92jDmtJ2WedpvcJ6aj6Enonsg==";
+
+        var socket = io({
+            transports: ['websocket'],
+          }
+
+        );
+
+        socket.on('local', (data) => {
+            switch (data.command) {
+              case 'avr/authenticate':
+                if (data.error) return console.log('Error:', data.error);
+                run(data.data);
+                break;
+              case 'avr/enter':
+                if (data.error) return console.log('Error:', data.error);
+                console.log('Entered:', data.data);
+                joininstance(data.data.instance);
+                break;
+            }
+          }
+
+        );
+
+        function joininstance(instance_ids) {
+          const [id, server] = instance_ids.split('@');
+
+          socket.on(id, (data) => {
+              switch (data.command) {
+                case 'avr/transform':
+                  if (data.error) return console.log('Error:', data.error);
+                  transform[data.data.path] = data.data;
+                  update();
+                  break;
+              }
+            }
+
+          );
+        }
+
+        socket.on('connect', () => {
+            console.log('Connected');
+
+            socket.emit('local', {
+
+                command: 'avr/authenticate',
+                data: {
+                  token: token
+                }
+              }
+
+            );
+          }
+
+        );
+
+        function run(data) {
+          console.log('Running', data.user);
+
+          socket.emit('local', {
+
+              command: 'avr/enter',
+              data: {
+                instance: 'i_00000000-0000-0000-0000-000000000000'
+              }
+            }
+
+          );
+        }
+      }
+
+    );
+  </script>
+</body>
+
+</html>

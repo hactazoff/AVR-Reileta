@@ -5,6 +5,8 @@ import { LoginInput, RegisterInput, SessionInfo } from "../utils/Interfaces";
 import { UserInfo } from "../utils/Interfaces";
 import { ErrorCodes, GenerateId, getCanEditUser, getCanLogin, getCanRegister } from "../utils/Constants";
 import { AuthAPISocket } from "./AuthAPISocket";
+import User from "../users/User";
+import Session from "../sessions/Session";
 
 export class AuthManager {
 
@@ -13,90 +15,58 @@ export class AuthManager {
 
     constructor(private readonly app: Reileta) {
         this.api_web = new AuthAPIWeb(this.app, this);
-        this.api_socket = new AuthAPISocket(this.app, this);    
+        this.api_socket = new AuthAPISocket(this.app, this);
     }
 
-    async login(input?: LoginInput, who?: UserInfo): Promise<{ user: UserInfo, session: SessionInfo } | ErrorMessage> {
+    async login(input?: LoginInput, who?: User): Promise<Session | ErrorMessage> {
         try {
-            if (getCanLogin())
-                return new ErrorMessage(ErrorCodes.ServiceDisabled);
             if (who)
                 return new ErrorMessage(ErrorCodes.UserAlreadyConnected);
             if (!checkLoginInput(input))
                 return new ErrorMessage(ErrorCodes.AuthInvalidInput);
-            const user = await this.app.users.getInternalUser(input.username);
+            const user = await this.app.users.get({ id: input.username }, "bypass");
             if (user instanceof ErrorMessage) return user;
-            if (!checkUserTags(user, ['avr:admin'])
-                && !(checkUserTags(user, ['avr:login_user']))
-            ) return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            if (!user.password || !verify(input.password, user.password))
+            if (!user.canConnect)
+                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+            if (!user.verifyPassword(input.password))
                 return new ErrorMessage(ErrorCodes.AuthInvalidLogin);
-            const session = await this.app.sessions.createSession(user);
-            if (session instanceof ErrorMessage) return session;
-            return { user, session };
+            return await this.app.sessions.create(user, "bypass");
         } catch (e) {
             console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }
 
-    async register(input?: RegisterInput, who?: UserInfo): Promise<{ user: UserInfo, session: SessionInfo } | ErrorMessage> {
+    async register(input?: RegisterInput, who?: User): Promise<Session | ErrorMessage> {
         try {
-            if (getCanRegister())
-                return new ErrorMessage(ErrorCodes.ServiceDisabled);
             if (who)
                 return new ErrorMessage(ErrorCodes.UserAlreadyConnected);
-            const root = await this.app.users.getInternalUser("root");
-            if (root instanceof ErrorMessage)
-                return new ErrorMessage(ErrorCodes.InternalError);
-            who = root;
             if (!checkRegisterInput(input))
                 return new ErrorMessage(ErrorCodes.AuthInvalidInput);
-            const user = await this.app.users.getInternalUser(input.username);
-            if (!(user instanceof ErrorMessage))
-                return new ErrorMessage(ErrorCodes.AuthInvalidLogin);
-            const u = await this.app.users.createInternalUser({
+            const alreadyCreated = await this.app.users.has(input.username);
+            if (alreadyCreated) return new ErrorMessage(ErrorCodes.AuthInvalidLogin);
+            const user = await this.app.users.create({
                 id: GenerateId.User(),
                 username: input.username,
                 password: input.password,
                 display: input.display,
-            }, who);
-            if (u instanceof ErrorMessage) return u;
-            if (!checkUserTags(u, ['avr:admin'])
-                && !(checkUserTags(u, ['avr:login_user']))
-            ) return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            const session = await this.app.sessions.createSession(u);
+            }, "bypass");
+            if (user instanceof ErrorMessage) return user;
+            if (!user.canConnect)
+                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+            const session = await this.app.sessions.create(user, user);
             if (session instanceof ErrorMessage) return session;
-            return { user: u, session };
+            return session;
         } catch (e) {
-            console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }
 
-    async logout(session?: SessionInfo, who?: UserInfo): Promise<ErrorMessage | null> {
-        try {
-            if (getCanEditUser())
-                return new ErrorMessage(ErrorCodes.ServiceDisabled);
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            return await this.app.sessions.deleteSession(session?.id, who);
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
+    async logout(session_id: string, who: User): Promise<ErrorMessage | true> {
+        return await this.app.sessions.delete(session_id, who);
     }
 
-    async delete(who?: UserInfo): Promise<ErrorMessage | null> {
-        try {
-            if (getCanEditUser())
-                return new ErrorMessage(ErrorCodes.ServiceDisabled);
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            return await this.app.users.deleteInternalUser(who, who);
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
+    async delete(who: User): Promise<ErrorMessage | true> {
+        return await this.app.users.delete(who.id, who);
     }
 }

@@ -1,209 +1,179 @@
 import { Reileta } from "../Reileta";
 import { UserAPIWeb } from "./UserAPIWeb";
-import { UserInfo, UserInput } from "../utils/Interfaces";
-import { ErrorCodes, GenerateId, getCanEditUser, getMyAdress } from "../utils/Constants";
-import { ErrorMessage, checkUserInput, checkUserResponse, checkUserTags, hash } from "../utils/Security";
+import { ErrorCodes, GenerateId, SafeLocalhostAdress } from "../utils/Constants";
+import { ErrorMessage, hash } from "../utils/Security";
+import User from "./User";
+import { isOwnServerAddress } from "../server/ServerManager";
 
 export class UserManager {
 
-
     api_web: UserAPIWeb;
+
+    /**
+     * Parse the user id and server address
+     * @param str User IDS (id@server)
+     */
+    public parseString(str: string): { id: string, server: string } {
+        const sp = str.split("@");
+        return {
+            id: sp[0],
+            server: !sp[1] || isOwnServerAddress(sp[1]) ? SafeLocalhostAdress : sp[1]
+        };
+    }
+
+    
+    public stringify(obj: { id: string, server: string }, server: string): string {
+        return `${obj.id}@${obj.server === SafeLocalhostAdress ? server : obj.server}`;
+    }
+
+    /**
+     * Get an user
+     * @param search user IDS (id@server)
+     * @param who User who is searching
+     * @param force force to fetch from database/network
+     * @returns 
+     */
+    async get(search: UserGetSearch, who?: User | "bypass"): Promise<User | ErrorMessage> {
+        try {
+            if (!search.server || isOwnServerAddress(search.server))
+                search.server = SafeLocalhostAdress;
+            if (!search.force) {
+                const cached = this.app.cache.get<User>(`${search.id}@${search.server}`);
+                if (cached instanceof User) return cached;
+            }
+            if (search.server === SafeLocalhostAdress)
+                return await this.import(search.id, who);
+            return await this.fetch(search.id, search.server, who);
+        } catch (e) {
+            return new ErrorMessage(ErrorCodes.InternalError);
+        }
+    }
+
+    async create(input: UserCreate, who?: User | "bypass") {
+        const user = await (new User(this.app, this)).create(input);
+        if (user instanceof ErrorMessage) return user;
+        this.app.cache.set<User>(`${user.id}@${user.server}`, user);
+        return user;
+    }
+
+    async delete(id: string, who: User | "bypass") {
+        const user = await this.get({ id }, who);
+        if (user instanceof ErrorMessage) return user;
+        if (!await user.delete())
+            return new ErrorMessage(ErrorCodes.InternalError);
+        this.app.cache.delete(`${id}@${user.server}`);
+        return true;
+    }
+
+
+
+    /**
+     * Check if an user exists
+     * @param id User id
+     * @returns 
+     */
+    async has(id: string): Promise<boolean> {
+        try {
+            return (await this.app.prisma.user.count({ where: { id } })) > 0;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Import an user from the database
+     */
+    private async import(id: string, who?: User | "bypass"): Promise<User | ErrorMessage> {
+        const i = await (new User(this.app, this)).import(id);
+        if (i instanceof ErrorMessage) return i;
+        this.app.cache.set<User>(`${i.id}@${i.server}`, i);
+        return i;
+    }
+
+    /**
+     * Fetch an user from a server
+     */
+    private async fetch(id: string, server: string, who?: User | "bypass"): Promise<User | ErrorMessage> {
+        if (who && who !== "bypass" && !who.canFetch)
+            return new ErrorMessage(ErrorCodes.UserDontHavePermission);
+        const i = await (new User(this.app, this)).fetch(id, server);
+        if (i instanceof ErrorMessage) return new ErrorMessage(ErrorCodes.InstanceNotFound);
+        this.app.cache.set<User>(`${i.id}@${i.server}`, i);
+        return i;
+    }
 
     constructor(private readonly app: Reileta) {
         this.api_web = new UserAPIWeb(this.app, this);
-        this.checkCreateRootUser();
+        this.updateRootUser();
     }
 
-    objectToStrId(obj?: { id: string, server?: string }) {
-        if (!obj) return null;
-        return `${obj.id}${obj.server ? "@" + obj.server : ""}`;
-    }
-
-    strToObject(str?: string): { id: string, server?: string } | null {
-        if (!str) return null;
-        const spl = str.split("@");
-        return { id: spl[0], server: spl[1] };
-    }
-
-    async checkCreateRootUser() {
+    private async updateRootUser() {
         try {
-            let root = await this.app.prisma.user.findUnique({ where: { name: "root" } });
-            if (!root) {
-                root = await this.app.prisma.user.create({
+            const user = await this.getRootUser();
+            if (user instanceof ErrorMessage) return;
+            this.app.cache.set<User>(`${user.id}@${user.server}`, user);
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    public async getRootUser() {
+        try {
+            let user = await this.app.prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { username: getDefaultRootUsername() },
+                        {
+                            AND: [
+                                { tags: { contains: "avr:admin" } },
+                                { tags: { contains: "avr:root" } },
+                                { tags: { contains: "avr:bot" } }
+                            ]
+                        }
+                    ]
+                }
+            });
+            if (!user) {
+                console.warn("Root user not found, creating a new one...");
+                user = await this.app.prisma.user.create({
                     data: {
                         id: GenerateId.User(),
-                        name: "root",
-                        display: "AVR Root User",
-                        created_at: new Date(),
-                        updated_at: new Date(),
-                        tags: ["avr:admin", "avr:bot"].join(","),
+                        display: "Root",
+                        username: getDefaultRootUsername(),
+                        password: getDefaultRootPassword(),
+                        tags: ["avr:admin", "avr:root", "avr:bot"].join(",")
                     }
                 });
-                let session = await this.app.sessions.createSession({ id: root.id });
-                if (session instanceof ErrorMessage)
-                    return console.error(session);
-                console.log(`Root user created with id ${root.id} and session ${session.id}`);
+                console.log("Root user created, id:", user.id, "username:", user.username);
             }
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    /**
-     * Get a user from a server
-     * @param search User id or username
-     * @returns 
-     */
-    async getInternalUser(search?: string): Promise<UserInfo | ErrorMessage> {
-        try {
-            if (typeof search !== "string")
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            var u = await this.app.prisma.user.findFirst({
-                where: { OR: [{ id: search }, { name: search }] }
-            });
-            return u ? {
-                id: u.id,
-                username: u.name,
-                display: u.display || u.name,
-                password: u.password || undefined,
-                thumbnail: u.thumbnail ? new URL(u.thumbnail, this.app.server.getInfo.gateways.http) : undefined,
-                banner: u.banner ? new URL(u.banner, this.app.server.getInfo.gateways.http) : undefined,
-                tags: u.tags?.split(",") || [],
-                external: false,
-                server: getMyAdress(),
-            } : new ErrorMessage(ErrorCodes.UserNotFound);
+            return await this.import(user.id, "bypass");
         } catch (e) {
             console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }
+}
 
-    /**
-     * Get a user from a server
-     * @param search User id or username
-     * @param address Server address
-     * @param user User who request
-     * @returns 
-     */
-    async getExternalUser(search?: string, address?: string, who?: UserInfo): Promise<UserInfo | ErrorMessage> {
-        try {
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            if (!search || !address || typeof search !== "string" || typeof address !== "string")
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (address === getMyAdress())
-                return await this.getInternalUser(search);
-            if (!checkUserTags(who, ["avr:fetch_external"]) && !checkUserTags(who, ['avr:admin']))
-                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            const server = await this.app.server.getServer(address);
-            if (!server)
-                return new ErrorMessage(ErrorCodes.ServerNotFound);
-            const res = await this.app.server.fetch<any>(server.gateways.http.origin, '/api/users/' + search);
-            if (res.error)
-                console.warn(res.error);
-            if (res.error || !checkUserResponse(res.data))
-                return new ErrorMessage(ErrorCodes.UserNotFound);
-            return {
-                id: res.data.id,
-                username: res.data.username,
-                display: res.data.display,
-                thumbnail: res.data.thumbnail ? new URL(res.data.thumbnail) : undefined,
-                banner: res.data.banner ? new URL(res.data.banner) : undefined,
-                tags: res.data.tags,
-                external: true,
-                server: server.gateways.http.host,
-            }
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-    }
+export function getDefaultRootUsername() {
+    return process.env.REILETA_DEFAULT_ROOT_USERNAME || "root";
+}
 
-    /**
-     * Delete a user
-     * @param user User to delete
-     * @returns
-     */
-    async deleteInternalUser(input?: UserInput, who?: UserInfo): Promise<ErrorMessage | null> {
-        try {
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            if (!checkUserInput(input))
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (!checkUserTags(who, ['avr:admin'])
-                && !(input.id === who.id && (checkUserTags(who, ['avr:delete_self_user'])))
-                && !checkUserTags(who, ['avr:delete_user'])
-            ) return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            await this.app.prisma.session.deleteMany({ where: { user_id: input.id } });
-            await this.app.prisma.world.deleteMany({ where: { owner_id: input.id } });
-            await this.app.prisma.user.deleteMany({ where: { id: input.id } })
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-        return null;
-    }
+export function getDefaultRootPassword() {
+    let pass = process.env.REILETA_DEFAULT_ROOT_PASSWORD;
+    return pass ? hash(pass) : null;
+}
 
-    /**
-     * Make a user 
-     * @param username Unique username
-     * @returns 
-     */
-    async createInternalUser(input?: UserInput, who?: UserInfo): Promise<UserInfo | ErrorMessage> {
-        try {
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            if (!checkUserInput(input) || !input.username)
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (!checkUserTags(who, ['avr:admin'])
-                && !(getCanEditUser() && input.id === who.id && checkUserTags(who, ['avr:edit_user'])))
-                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            let id = GenerateId.User();
-            await this.app.prisma.user.create({
-                data: {
-                    id: id,
-                    name: input.username,
-                    display: input.display || input.username,
-                    password: input.password ? hash(input.password) : undefined,
-                    created_at: new Date(),
-                    updated_at: new Date()
-                }
-            });
-            return await this.getInternalUser(id);
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-    }
+export interface UserGetSearch {
+    id: string;
+    server?: string;
+    force?: boolean;
+}
 
-    /**
-     * Update a user
-     * @param input User data
-     * @param user User who request
-     * @returns 
-     */
-    async updateInternalUser(input?: UserInput, who?: UserInfo): Promise<UserInfo | ErrorMessage> {
-        try {
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserNotLogged);
-            if (!checkUserInput(input))
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (!checkUserTags(who, ['avr:admin'])
-                && !(getCanEditUser() && input.id === who.id && checkUserTags(who, ['avr:edit_user'])))
-                return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            await this.app.prisma.user.update({
-                where: { id: input.id },
-                data: {
-                    name: input.username,
-                    display: input.display,
-                    password: input.password ? hash(input.password) : undefined,
-                    updated_at: new Date()
-                }
-            });
-            return await this.getInternalUser(input.id);
-        } catch (e) {
-            console.warn(e);
-            return new ErrorMessage(ErrorCodes.InternalError);
-        }
-    }
+export interface UserCreate {
+    id: string;
+    username: string;
+    password: string;
+    thumbnail?: string;
+    banner?: string;
+    display?: string;
 }

@@ -38,7 +38,7 @@ export class ServerAPISocket {
     onPreConnection(socket: SocketType, next: (err?: any) => void) {
         socket.old_emit = socket.emit;
         var ip = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-        socket.data = { ip: typeof ip === 'string' ? ip : ip[0] };
+        socket.data = { ip: typeof ip === 'string' ? ip : ip[0], players: [] };
         console.log(`${new Date().toISOString()} | ${process.env.HIDE_IP == 'true' ? '<hidden>' : socket.data.ip} > Socket ${socket.id} connected.`);
         socket.on('local', (args) => {
             if (!this.no_print.includes(args.command))
@@ -61,5 +61,5 @@ export class ServerAPISocket {
         next();
     }
 
-    public no_print: string[] = ['avr/ping'];
+    public no_print: string[] = ['avr/ping', 'avr/transform'];
 }

@@ -1,8 +1,9 @@
-import { HomeInfo, UserInfo, WorldInfos } from "../utils/Interfaces";
 import { Reileta } from "../Reileta";
 import { HomeAPIWeb } from "./HomeAPIWeb";
-import { ErrorCodes, getMyAdress } from "../utils/Constants";
-import { ErrorMessage, checkUserTags } from "../utils/Security";
+import { ErrorCodes } from "../utils/Constants";
+import { ErrorMessage } from "../utils/Security";
+import User from "../users/User";
+import World from "../worlds/World";
 
 export class HomeManager {
 
@@ -12,30 +13,16 @@ export class HomeManager {
         this.api_web = new HomeAPIWeb(this.app, this);
     }
 
-    async getHome(id?: string, who?: UserInfo): Promise<WorldInfos | ErrorMessage> {
+    async getHome(user_id: string, who: User | "bypass"): Promise<World | ErrorMessage> {
         try {
-            if (!id)
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (!who)
-                return new ErrorMessage(ErrorCodes.UserInvalidInput);
-            if (!checkUserTags(who, ['avr:admin'])
-                && !(checkUserTags(who, ['avr:get_home_user']))
-                && id !== who.id
-            ) return new ErrorMessage(ErrorCodes.UserDontHavePermission);
-            const user = await this.app.users.getInternalUser(id);
+            const user = await this.app.users.get({ id: user_id }, who);
             if (user instanceof ErrorMessage) return user;
-            const obj = this.app.worlds.strIdToObject(user.home);
-            let world: WorldInfos | ErrorMessage = new ErrorMessage(ErrorCodes.WorldNotFound);
-            if (obj?.server && obj.server !== getMyAdress())
-                world = await this.app.worlds.getExternalWorld(obj.server, obj.id);
-            else world = await this.app.worlds.getInternalWorld(obj?.id);
+            let world = await user.getHome(who);
             if (world instanceof ErrorMessage)
-                world = await this.app.worlds.getFallbackWorld();
+                world = await this.app.worlds.getFallbackWorld(who);
             if (world instanceof ErrorMessage) return world;
-            world.assets = world.assets.filter(e => !e.empty);
             return world;
         } catch (e) {
-            console.warn(e);
             return new ErrorMessage(ErrorCodes.InternalError);
         }
     }

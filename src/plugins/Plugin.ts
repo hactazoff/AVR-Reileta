@@ -1,10 +1,11 @@
 import { UUID } from "crypto";
 import { Reileta } from "../Reileta";
 
-export type PluginID = `p_${UUID}`
-export type PluginVersion = `${string}.${string}.${string}-${string}`
+export type PluginID = UUID | string;
+export type PluginVersion = `${number}.${number}.${number}-${string}` | `${number}.${number}.${number}` | `${number}.${number}-${string}` | `${number}.${number}` | `${number}-${string}` | number;
 export interface PluginRequire {
     id: PluginID,
+    callname?: string,
     version: PluginVersion | PluginVersion[],
     required?: boolean
 }
@@ -19,7 +20,9 @@ export interface PluginMeta {
 
 export class Plugin {
 
-    meta?: PluginMeta;
+    meta: PluginMeta = {} as PluginMeta;
 
-    constructor(private readonly app: Reileta) {}
+    constructor(protected readonly app: Reileta, protected readonly basedir: string) { }
+
+    async init() { }
 }
